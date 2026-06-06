@@ -38,40 +38,43 @@ export const DOMAINS: {
   },
 ];
 
-// Tarifs TEST paiements — frais d'inscription 2 $ (à restaurer après validation)
 export const DURATIONS = [
   {
     id: 'two_weeks' as const,
     label: '2 semaines',
     subtitle: '6 heures par semaine',
     pricingMode: 'split' as const,
-    registrationFeeUsd: 2,
-    formationFeeUsd: 0,
+    registrationFeeUsd: 12,
+    formationFeeUsd: 25,
     description:
       'Parcours court et intensif pour découvrir le développement, valider votre motivation et poser des bases techniques solides avec un encadrement direct.',
     highlight: 'Découverte',
+    formationFeeDeadlineDays: 7,
   },
   {
     id: 'three_months' as const,
     label: '3 mois',
     subtitle: '3 jours par semaine',
     pricingMode: 'split' as const,
-    registrationFeeUsd: 2,
-    formationFeeUsd: 0,
+    registrationFeeUsd: 54,
+    formationFeeUsd: 213,
     description:
       'Parcours complet pour monter en compétences sur la durée. Vous serez formé et encadré sur des projets concrets, avec des revues régulières pour gagner en autonomie et viser un profil de développeur confirmé.',
     highlight: 'Confirmé',
+    formationFeeDeadlineDays: 60,
   },
   {
     id: 'four_months' as const,
     label: '4 mois',
     subtitle: '3 jours par semaine — formation personnelle',
-    pricingMode: 'flat' as const,
-    totalUsd: 2,
+    pricingMode: 'split' as const,
+    registrationFeeUsd: 90,
+    formationFeeUsd: 264.99,
     personal: true,
     description:
       'Accompagnement individualisé sur 4 mois avec un formateur dédié — formation en tête-à-tête, pas en groupe. Un mois supplémentaire pour viser un niveau senior : maîtrise technique, gestion de projet agile et portfolio de réalisations professionnelles.',
     highlight: 'Senior',
+    formationFeeDeadlineDays: 90,
   },
 ] as const;
 
@@ -114,18 +117,21 @@ export const FORMATION_SESSIONS = [
     label: 'Session de juillet',
     period: '1er – 15 juillet 2026',
     shortLabel: '1 – 15 juil. 2026',
+    startDate: '2026-07-01',
   },
   {
     id: 'august_2026' as const,
     label: 'Session d\'août',
     period: '1er – 15 août 2026',
     shortLabel: '1 – 15 août 2026',
+    startDate: '2026-08-01',
   },
   {
     id: 'late_august_2026' as const,
     label: 'Session fin août',
     period: '24 août – 7 septembre 2026',
     shortLabel: '24 août – 7 sept. 2026',
+    startDate: '2026-08-24',
   },
 ] as const;
 
@@ -157,34 +163,66 @@ export function formatUsd(amount: number) {
 }
 
 export function getDurationTotalUsd(duration: Duration) {
-  if (duration.pricingMode === 'flat') return duration.totalUsd;
   return duration.registrationFeeUsd + duration.formationFeeUsd;
 }
 
-export function getDurationPricing(duration: Duration) {
-  const amountUsd = getDurationTotalUsd(duration);
+export function getRegistrationFeeUsd(duration: Duration) {
+  return duration.registrationFeeUsd;
+}
 
-  if (duration.pricingMode === 'flat') {
-    return {
-      pricingMode: 'flat' as const,
-      personal: duration.personal,
-      registrationFeeUsd: null,
-      formationFeeUsd: null,
-      amountUsd,
-      amountUsdInt: Math.round(amountUsd),
-      stripeCents: Math.round(amountUsd * 100),
-    };
-  }
+export function getFormationFeeUsd(duration: Duration) {
+  return duration.formationFeeUsd;
+}
+
+export function usdToStripeCents(amountUsd: number) {
+  return Math.round(amountUsd * 100);
+}
+
+export function usdToXof(amountUsd: number) {
+  return Math.round(amountUsd * 600);
+}
+
+export function getDurationPricing(duration: Duration) {
+  const registrationFeeUsd = getRegistrationFeeUsd(duration);
+  const formationFeeUsd = getFormationFeeUsd(duration);
+  const amountUsd = registrationFeeUsd + formationFeeUsd;
 
   return {
     pricingMode: 'split' as const,
-    personal: false,
-    registrationFeeUsd: duration.registrationFeeUsd,
-    formationFeeUsd: duration.formationFeeUsd,
+    personal: 'personal' in duration && Boolean(duration.personal),
+    registrationFeeUsd,
+    formationFeeUsd,
     amountUsd,
-    amountUsdInt: amountUsd,
-    stripeCents: amountUsd * 100,
+    amountUsdInt: Math.round(amountUsd * 100) / 100,
+    registrationStripeCents: usdToStripeCents(registrationFeeUsd),
+    formationStripeCents: usdToStripeCents(formationFeeUsd),
+    stripeCents: usdToStripeCents(amountUsd),
   };
+}
+
+export function getFormationFeeDeadlineDays(durationId: DurationId) {
+  return getDuration(durationId).formationFeeDeadlineDays;
+}
+
+export function formatFormationDeadlineDays(days: number) {
+  if (days === 7) return '7 jours';
+  if (days === 60) return '2 mois';
+  if (days === 90) return '3 mois';
+  if (days === 30) return '30 jours (1 mois)';
+  if (days % 30 === 0 && days >= 30) {
+    const months = days / 30;
+    return `${days} jours (${months} mois)`;
+  }
+  return `${days} jours`;
+}
+
+export function getFormationPaymentDeadline(sessionId: SessionId, durationId: DurationId) {
+  const session = getFormationSession(sessionId);
+  const days = getFormationFeeDeadlineDays(durationId);
+  const start = new Date(`${session.startDate}T00:00:00`);
+  const deadline = new Date(start);
+  deadline.setDate(deadline.getDate() + days);
+  return deadline;
 }
 
 export function getDuration(id: DurationId) {
@@ -199,3 +237,14 @@ export function getDomain(id: DomainId) {
 export function getFormationSession(id: SessionId) {
   return FORMATION_SESSIONS.find((s) => s.id === id)!;
 }
+
+export function getProfileTechnologies() {
+  return [...new Set(TECHNOLOGIES.flatMap((group) => group.items))].sort((a, b) =>
+    a.localeCompare(b, 'fr'),
+  );
+}
+
+export const SKILL_LEVEL_LABELS: Record<'beginner' | 'experienced', string> = {
+  beginner: 'Débutant',
+  experienced: 'Je développe déjà',
+};

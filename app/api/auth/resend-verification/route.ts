@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import { getSessionUserId } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 import { apiError, apiServerError, apiUnauthorized } from '@/app/lib/api-security';
-import { canResendVerification } from '@/app/lib/enrollment-security';
-import { createAndSendEmailVerification } from '@/app/lib/email-verification';
+import {
+  createAndSendEmailVerification,
+  getResendVerificationStatus,
+} from '@/app/lib/email-verification';
 
 export async function POST(request: Request) {
   const userId = await getSessionUserId();
@@ -24,8 +26,15 @@ export async function POST(request: Request) {
     return apiError('Email déjà vérifié', 400);
   }
 
-  if (!canResendVerification(user.emailVerificationExpiresAt)) {
-    return apiError('Veuillez patienter avant de renvoyer l\'email', 429);
+  const resendStatus = getResendVerificationStatus(user.emailVerificationExpiresAt);
+  if (!resendStatus.canResend) {
+    return NextResponse.json(
+      {
+        error: `Veuillez patienter ${resendStatus.retryAfterSeconds} s avant de renvoyer l'email`,
+        retryAfterSeconds: resendStatus.retryAfterSeconds,
+      },
+      { status: 429 },
+    );
   }
 
   try {

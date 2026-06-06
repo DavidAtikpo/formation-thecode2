@@ -8,8 +8,6 @@ export type EnrollmentCheckoutBody = {
   country: string;
   phone: string;
   address: string;
-  passportPhotoUrl: string;
-  passportPublicId: string;
   domain: DomainId;
   formationSession: SessionId;
   duration: DurationId;
@@ -37,8 +35,6 @@ export function parseEnrollmentCheckoutBody(
   const country = typeof raw.country === 'string' ? raw.country.trim() : '';
   const phone = typeof raw.phone === 'string' ? raw.phone.trim() : '';
   const address = typeof raw.address === 'string' ? raw.address.trim() : '';
-  const passportPhotoUrl = typeof raw.passportPhotoUrl === 'string' ? raw.passportPhotoUrl : '';
-  const passportPublicId = typeof raw.passportPublicId === 'string' ? raw.passportPublicId : '';
   const domain = raw.domain as DomainId;
   const formationSession = raw.formationSession as SessionId;
   const duration = raw.duration as DurationId;
@@ -51,9 +47,6 @@ export function parseEnrollmentCheckoutBody(
 
   if (!firstName || !lastName || !country || !phone || !address) {
     return { error: 'Informations personnelles incomplètes' };
-  }
-  if (!passportPhotoUrl || !passportPublicId) {
-    return { error: 'Photo passeport requise' };
   }
   if (!VALID_DOMAINS.includes(domain)) {
     return { error: 'Domaine invalide' };
@@ -84,8 +77,6 @@ export function parseEnrollmentCheckoutBody(
       country,
       phone,
       address,
-      passportPhotoUrl,
-      passportPublicId,
       domain,
       formationSession,
       duration,

@@ -1,22 +1,16 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import LoadingState from '@/app/components/LoadingState';
 import { MotionCard } from '@/app/components/Motion';
-import { getDomain, getFormationSession } from '@/app/lib/formation-config';
-
-type Enrollment = {
-  firstName: string;
-  lastName: string;
-  domain: string;
-  formationSession: string;
-  duration: string;
-  status: string;
-};
+import SkillProfileModal from '@/app/components/SkillProfileModal';
 
 function SuccessContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const verifiedRef = useRef(false);
   const provider =
     searchParams.get('provider') ??
     (searchParams.get('session_id')
@@ -27,10 +21,14 @@ function SuccessContent() {
   const sessionId = searchParams.get('session_id');
   const transactionId = searchParams.get('transaction_id') ?? searchParams.get('id');
   const enrollmentId = searchParams.get('enrollment_id');
-  const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [status, setStatus] = useState<'loading' | 'paid' | 'pending' | 'error'>('loading');
+  const [firstName, setFirstName] = useState('');
+  const [showSkillModal, setShowSkillModal] = useState(false);
+  const [redirectReady, setRedirectReady] = useState(false);
 
   useEffect(() => {
+    if (verifiedRef.current) return;
+
     const hasStripeRef = provider === 'stripe' && sessionId;
     const hasFedapayRef = provider === 'fedapay' && transactionId;
     const hasCryptoRef = provider === 'crypto' && enrollmentId;
@@ -40,28 +38,62 @@ function SuccessContent() {
       return;
     }
 
+    const cacheKey = `tc2-verify:${provider}:${sessionId ?? transactionId ?? enrollmentId}`;
+    if (sessionStorage.getItem(cacheKey) === 'paid') {
+      verifiedRef.current = true;
+      setStatus('paid');
+      return;
+    }
+
+    verifiedRef.current = true;
+
     const query =
       provider === 'stripe'
-        ? `provider=stripe&session_id=${encodeURIComponent(sessionId!)}`
+        ? `provider=stripe&phase=registration&session_id=${encodeURIComponent(sessionId!)}`
         : provider === 'crypto'
-          ? `provider=crypto&enrollment_id=${encodeURIComponent(enrollmentId!)}`
-          : `provider=fedapay&transaction_id=${encodeURIComponent(transactionId!)}`;
+          ? `provider=crypto&phase=registration&enrollment_id=${encodeURIComponent(enrollmentId!)}`
+          : `provider=fedapay&phase=registration&transaction_id=${encodeURIComponent(transactionId!)}`;
 
     fetch(`/api/enrollment/verify?${query}`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => {
-        if (data.status === 'paid') {
-          setEnrollment(data.enrollment);
-          setStatus('paid');
-        } else {
-          setStatus('pending');
-        }
+        const ok = data.status === 'paid' || data.status === 'active';
+        if (ok) sessionStorage.setItem(cacheKey, 'paid');
+        setStatus(ok ? 'paid' : 'pending');
       })
       .catch(() => setStatus('error'));
   }, [provider, sessionId, transactionId, enrollmentId]);
 
+  useEffect(() => {
+    if (status !== 'paid') return;
+
+    fetch('/api/espace', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!json?.enrollment) return;
+        setFirstName(json.enrollment.firstName ?? '');
+        if (!json.enrollment.skillProfile?.completed) {
+          setShowSkillModal(true);
+        } else {
+          setRedirectReady(true);
+        }
+      })
+      .catch(() => setRedirectReady(true));
+  }, [status]);
+
+  useEffect(() => {
+    if (!redirectReady || showSkillModal) return;
+    const timer = setTimeout(() => router.replace('/espace'), 4000);
+    return () => clearTimeout(timer);
+  }, [redirectReady, showSkillModal, router]);
+
+  const closeSkillModal = () => {
+    setShowSkillModal(false);
+    setRedirectReady(true);
+  };
+
   if (status === 'loading') {
-    return <p className="text-slate-400">Vérification du paiement…</p>;
+    return <LoadingState fullScreen message="Vérification du paiement…" />;
   }
 
   if (status === 'pending') {
@@ -74,7 +106,7 @@ function SuccessContent() {
     );
   }
 
-  if (status === 'error' || !enrollment) {
+  if (status === 'error') {
     return (
       <div className="text-center">
         <h1 className="text-2xl font-bold">Inscription</h1>
@@ -87,41 +119,49 @@ function SuccessContent() {
     );
   }
 
-  const domainLabel = getDomain(enrollment.domain as Parameters<typeof getDomain>[0]).label;
-  const session = getFormationSession(enrollment.formationSession as Parameters<typeof getFormationSession>[0]);
-
   return (
-    <MotionCard className="text-center">
-      <div className="mb-4 text-6xl">🎉</div>
-      <h1 className="text-3xl font-bold text-brand-300">Inscription confirmée !</h1>
-      <p className="mt-4 text-lg text-slate-300">
-        Bienvenue {enrollment.firstName} {enrollment.lastName}
-      </p>
-      <div className="mx-auto mt-6 max-w-md rounded-xl border border-white/10 bg-white/5 p-6 text-left text-sm">
-        <p><span className="text-slate-500">Domaine :</span> {domainLabel}</p>
-        <p className="mt-1"><span className="text-slate-500">Session :</span> {session.period}</p>
-        <p className="mt-1"><span className="text-slate-500">Statut :</span> <span className="text-green-400">Payé ✓</span></p>
-      </div>
-      <p className="mt-6 text-slate-400">
-        Deux rencontres de préparation auront lieu avant le début de votre session.
-        Nous vous contacterons pour les dates. Votre certificat sera généré à la fin de la formation.
-      </p>
-      <a
-        href="https://wa.me/22892591228"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-8 inline-block rounded-xl bg-green-600 px-8 py-3 font-semibold text-white hover:bg-green-500"
-      >
-        Nous contacter sur WhatsApp
-      </a>
-    </MotionCard>
+    <>
+      <SkillProfileModal
+        open={showSkillModal}
+        firstName={firstName || 'Candidat'}
+        onComplete={closeSkillModal}
+        onSkip={closeSkillModal}
+      />
+      <MotionCard className="text-center">
+        <div className="mb-4 text-6xl">🎉</div>
+        <h1 className="text-3xl font-bold text-brand-300">Frais d&apos;inscription payés !</h1>
+        <p className="mt-4 text-slate-300">
+          Votre place est réservée. Accédez à votre espace candidat pour suivre votre parcours,
+          consulter vos notes et régler les frais de formation.
+        </p>
+        <p className="mt-3 text-xs text-slate-500 sm:text-sm">
+          Les frais de formation se règlent dans votre espace candidat. Le délai dépend de la durée
+          choisie (7 jours pour 2 semaines, 2 mois pour 3 mois, 3 mois pour 4 mois).
+        </p>
+        {showSkillModal ? (
+          <p className="mt-2 text-xs text-brand-300">
+            Complétez votre profil technique pour personnaliser votre accompagnement.
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">
+            Redirection vers votre espace dans quelques secondes…
+          </p>
+        )}
+        <Link
+          href="/espace"
+          className="mt-8 inline-block rounded-xl bg-gradient-to-r from-brand-500 to-violet-600 px-8 py-3 font-semibold text-white hover:opacity-90"
+        >
+          Accéder à mon espace
+        </Link>
+      </MotionCard>
+    </>
   );
 }
 
 export default function SuccesPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-20">
-      <Suspense fallback={<p className="text-slate-400">Chargement…</p>}>
+      <Suspense fallback={<LoadingState fullScreen />}>
         <SuccessContent />
       </Suspense>
     </div>

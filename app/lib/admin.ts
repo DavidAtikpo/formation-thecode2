@@ -33,9 +33,9 @@ export async function getAdminSessionUserId(): Promise<string | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, role: true },
+    select: { id: true, email: true, role: true, emailVerified: true },
   });
 
-  if (!user || !isAdminUser(user)) return null;
+  if (!user || !user.emailVerified || !isAdminUser(user)) return null;
   return user.id;
 }

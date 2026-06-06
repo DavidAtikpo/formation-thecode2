@@ -13,6 +13,7 @@ import {
   getDuration,
   getDomain,
   getFormationSession,
+  formatFormationDeadlineDays,
   getDurationTotalUsd,
   type DomainId,
   type DurationId,
@@ -25,8 +26,6 @@ type FormData = {
   country: string;
   phone: string;
   address: string;
-  passportPhotoUrl: string;
-  passportPublicId: string;
   domain: DomainId | '';
   formationSession: SessionId | '';
   duration: DurationId | '';
@@ -50,15 +49,12 @@ export default function EnrollmentForm() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>('fedapay');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({
     firstName: '',
     lastName: '',
     country: '',
     phone: '',
     address: '',
-    passportPhotoUrl: '',
-    passportPublicId: '',
     domain: '',
     formationSession: '',
     duration: '',
@@ -80,33 +76,10 @@ export default function EnrollmentForm() {
     });
   };
 
-  const uploadPhoto = async (file: File) => {
-    setBusy(true);
-    setError(null);
-    const fd = new FormData();
-    fd.append('file', file);
-    try {
-      const res = await fetch('/api/upload/passport', {
-        method: 'POST',
-        credentials: 'include',
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload échoué');
-      update({ passportPhotoUrl: data.url, passportPublicId: data.publicId });
-      setPhotoPreview(data.url);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erreur upload');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const validateStep = (): string | null => {
     if (step === 0) {
       if (!form.firstName || !form.lastName) return 'Nom et prénom requis';
       if (!form.country || !form.phone || !form.address) return 'Coordonnées incomplètes';
-      if (!form.passportPhotoUrl) return 'Photo passeport requise';
     }
     if (step === 1 && !form.domain) return 'Sélectionnez un domaine';
     if (step === 2 && !form.formationSession) return 'Sélectionnez une session de formation';
@@ -181,7 +154,10 @@ export default function EnrollmentForm() {
         {step === 0 && (
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-white sm:text-xl">Vos informations</h2>
-            <p className="text-xs text-slate-400 sm:text-sm">Ces données serviront à générer votre certificat de fin de formation.</p>
+            <p className="text-xs text-slate-400 sm:text-sm">
+              La vérification d&apos;identité (carte d&apos;identité ou passeport) se fera dans votre espace
+              candidat après l&apos;inscription.
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Prénom" value={form.firstName} onChange={(v) => update({ firstName: v })} />
               <Field label="Nom" value={form.lastName} onChange={(v) => update({ lastName: v })} />
@@ -189,27 +165,6 @@ export default function EnrollmentForm() {
             <Field label="Pays" value={form.country} onChange={(v) => update({ country: v })} />
             <Field label="Téléphone" value={form.phone} onChange={(v) => update({ phone: v })} type="tel" />
             <Field label="Adresse" value={form.address} onChange={(v) => update({ address: v })} />
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Photo passeport *</label>
-              <div className="flex items-center gap-4">
-                {photoPreview && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoPreview} alt="Aperçu" className="h-20 w-20 rounded-lg object-cover ring-2 ring-brand-400/50" />
-                )}
-                <label className="cursor-pointer rounded-lg border border-dashed border-brand-400/40 px-4 py-3 text-sm text-brand-300 hover:bg-brand-400/10">
-                  {form.passportPhotoUrl ? 'Changer la photo' : 'Téléverser une photo'}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) uploadPhoto(f);
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
           </div>
         )}
 
@@ -294,7 +249,7 @@ export default function EnrollmentForm() {
                     <span className="rounded-full bg-violet-400/15 px-2 py-0.5 text-[10px] text-violet-300">
                       {d.highlight}
                     </span>
-                    {d.pricingMode === 'flat' && d.personal && (
+                    {'personal' in d && d.personal && (
                       <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] text-emerald-300">
                         Personnelle
                       </span>
@@ -303,23 +258,16 @@ export default function EnrollmentForm() {
                   <p className="mb-1 text-xs text-slate-400">{d.subtitle}</p>
                   <p className="mb-2 text-xs leading-relaxed text-slate-400">{d.description}</p>
                   <div className="space-y-0.5 border-t border-white/10 pt-2 text-xs">
-                    {d.pricingMode === 'flat' ? (
+                    <>
                       <div className="flex justify-between text-slate-500">
-                        <span>Inscription + formation</span>
-                        <span>{formatUsd(getDurationTotalUsd(d))} $</span>
+                        <span>Inscription</span>
+                        <span>{d.registrationFeeUsd} $</span>
                       </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between text-slate-500">
-                          <span>Inscription</span>
-                          <span>{d.registrationFeeUsd} $</span>
-                        </div>
-                        <div className="flex justify-between text-slate-500">
-                          <span>Formation</span>
-                          <span>{d.formationFeeUsd} $</span>
-                        </div>
-                      </>
-                    )}
+                      <div className="flex justify-between text-slate-500">
+                        <span>Formation</span>
+                        <span>{formatUsd(d.formationFeeUsd)} $</span>
+                      </div>
+                    </>
                     <div className="flex justify-between font-semibold text-brand-300">
                       <span>Total</span>
                       <span>{formatUsd(getDurationTotalUsd(d))} $</span>
@@ -400,26 +348,28 @@ export default function EnrollmentForm() {
               {price && (
                 <div className="mt-3 border-t border-white/10 pt-3">
                   <div className="space-y-1 text-xs sm:text-sm">
-                    {price.pricingMode === 'flat' ? (
+                    <>
                       <div className="flex justify-between text-slate-400">
-                        <span>Inscription + formation (personnelle)</span>
-                        <span>{formatUsd(price.amountUsd)} $</span>
+                        <span>Frais d&apos;inscription</span>
+                        <span>{price.registrationFeeUsd} $</span>
                       </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between text-slate-400">
-                          <span>Frais d&apos;inscription</span>
-                          <span>{price.registrationFeeUsd} $</span>
-                        </div>
-                        <div className="flex justify-between text-slate-400">
-                          <span>Frais de formation</span>
-                          <span>{price.formationFeeUsd} $</span>
-                        </div>
-                      </>
-                    )}
-                    <p className="border-t border-white/10 pt-2 text-base font-bold text-brand-300 sm:text-lg">
-                      Total : {formatUsd(price.amountUsd)} $
+                      <div className="flex justify-between text-slate-400">
+                        <span>Frais de formation</span>
+                        <span>{formatUsd(price.formationFeeUsd)} $</span>
+                      </div>
+                    </>
+                    <p className="border-t border-white/10 pt-2 text-sm text-slate-400">
+                      À payer maintenant : frais d&apos;inscription
                     </p>
+                    <p className="text-base font-bold text-brand-300 sm:text-lg">
+                      {formatUsd(price.registrationFeeUsd)} $
+                    </p>
+                    {price.formationFeeUsd > 0 && (
+                      <p className="text-[11px] text-slate-500">
+                        Frais de formation ({formatUsd(price.formationFeeUsd)} $) — à régler dans
+                        votre espace candidat sous {formatFormationDeadlineDays(price.formationFeeDeadlineDays)} après le début de session.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -446,23 +396,24 @@ export default function EnrollmentForm() {
         {step === 6 && (
           <div className="space-y-4 text-center">
             <div className="text-4xl">💳</div>
-            <h2 className="text-lg font-bold text-white sm:text-xl">Paiement sécurisé</h2>
+            <h2 className="text-lg font-bold text-white sm:text-xl">Frais d&apos;inscription</h2>
             <p className="text-xs text-slate-400 sm:text-sm">
-              Votre inscription sera validée uniquement après confirmation du paiement.
+              Seuls les frais d&apos;inscription sont dus aujourd&apos;hui. Les frais de formation
+              se règlent ensuite dans votre espace candidat.
             </p>
             {price && (
               <div>
                 <p className="text-xl font-bold text-brand-300 sm:text-2xl">
-                  {formatUsd(price.amountUsd)} $
+                  {formatUsd(price.registrationFeeUsd)} $
                 </p>
-                <p className="text-xs text-slate-500">
-                  {price.pricingMode === 'flat'
-                    ? 'Inscription + formation personnelle'
-                    : `Inscription ${price.registrationFeeUsd} $ + Formation ${price.formationFeeUsd} $`}
-                </p>
+                {price.formationFeeUsd > 0 && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    + {formatUsd(price.formationFeeUsd)} $ de frais de formation (plus tard)
+                  </p>
+                )}
                 {paymentMethod === 'fedapay' && (
                   <p className="mt-1 text-xs text-slate-400">
-                    ≈ {Math.round(price.amountUsd * 600).toLocaleString('fr-FR')} FCFA via FedaPay
+                    ≈ {Math.round(price.registrationFeeUsd * 600).toLocaleString('fr-FR')} FCFA via FedaPay
                   </p>
                 )}
               </div>

@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import LoadingState from '@/app/components/LoadingState';
 import { MotionCard } from '@/app/components/Motion';
 
 function ConnexionContent() {
@@ -94,7 +95,7 @@ function ConnexionContent() {
 
 export default function ConnexionPage() {
   return (
-    <Suspense fallback={<p className="py-20 text-center text-slate-400">Chargement…</p>}>
+    <Suspense fallback={<LoadingState fullScreen className="py-20" />}>
       <ConnexionContent />
     </Suspense>
   );

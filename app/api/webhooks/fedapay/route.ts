@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { Webhook } from 'fedapay';
 import { prisma } from '@/app/lib/prisma';
-import { markEnrollmentPaidIfPending } from '@/app/lib/enrollment-security';
+import {
+  markFormationPaidIfActive,
+  markRegistrationPaidIfPending,
+} from '@/app/lib/enrollment-security';
+import { getExpectedXof } from '@/app/lib/enrollment-verify';
 import { retrieveFedapayTransaction } from '@/app/lib/fedapay';
 
 export const runtime = 'nodejs';
@@ -46,26 +50,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const enrollment = await prisma.enrollment.findFirst({
+    const regEnrollment = await prisma.enrollment.findFirst({
       where: {
         fedapayTransactionId: transactionId,
-        paymentMethod: 'fedapay',
         status: 'pending_payment',
       },
     });
 
-    if (!enrollment) {
+    if (regEnrollment) {
+      const transaction = await retrieveFedapayTransaction(transactionId);
+      const amountOk = Number(transaction?.amount) === getExpectedXof(regEnrollment, 'registration');
+      if (transaction?.wasPaid() && amountOk) {
+        await markRegistrationPaidIfPending(regEnrollment.id);
+      }
       return NextResponse.json({ received: true });
     }
 
-    const transaction = await retrieveFedapayTransaction(transactionId);
-    const amountOk = Number(transaction?.amount) === enrollment.amountXof;
+    const formEnrollment = await prisma.enrollment.findFirst({
+      where: {
+        formationFedapayTransactionId: transactionId,
+        status: 'active',
+        formationPaidAt: null,
+      },
+    });
 
-    if (!transaction?.wasPaid() || !amountOk) {
-      return NextResponse.json({ received: true });
+    if (formEnrollment) {
+      const transaction = await retrieveFedapayTransaction(transactionId);
+      const amountOk = Number(transaction?.amount) === getExpectedXof(formEnrollment, 'formation');
+      if (transaction?.wasPaid() && amountOk) {
+        await markFormationPaidIfActive(formEnrollment.id);
+      }
     }
-
-    await markEnrollmentPaidIfPending(enrollment.id);
   } catch {
     return NextResponse.json({ error: 'Erreur traitement' }, { status: 500 });
   }

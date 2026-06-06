@@ -66,9 +66,9 @@ export default function Header() {
                   Admin
                 </Link>
               )}
-              <Link href="/inscription" className={btnClass}>
-                <span className="hidden sm:inline">Mon inscription</span>
-                <span className="sm:hidden">Inscription</span>
+              <Link href="/espace" className={btnClass}>
+                <span className="hidden sm:inline">Mon espace</span>
+                <span className="sm:hidden">Espace</span>
               </Link>
               <button
                 type="button"

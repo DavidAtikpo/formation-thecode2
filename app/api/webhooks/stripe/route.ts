@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { prisma } from '@/app/lib/prisma';
-import { markEnrollmentPaidIfPending } from '@/app/lib/enrollment-security';
-import { getDuration } from '@/app/lib/formation-config';
+import {
+  markFormationPaidIfActive,
+  markRegistrationPaidIfPending,
+} from '@/app/lib/enrollment-security';
+import { getExpectedStripeCents } from '@/app/lib/enrollment-verify';
 import { getStripe } from '@/app/lib/stripe';
 
 export const runtime = 'nodejs';
@@ -37,49 +40,72 @@ export async function POST(request: Request) {
 
       const enrollmentId = session.metadata?.enrollmentId ?? session.client_reference_id;
       const userId = session.metadata?.userId;
+      const purpose = session.metadata?.purpose;
 
-      if (
-        session.metadata?.purpose !== 'formation_enrollment'
-        || !enrollmentId
-        || !userId
-      ) {
+      if (!enrollmentId || !userId) {
         return NextResponse.json({ received: true });
       }
 
-      const enrollment = await prisma.enrollment.findFirst({
-        where: {
-          id: enrollmentId,
-          userId,
-          paymentMethod: 'stripe',
-          status: 'pending_payment',
-        },
-      });
+      if (purpose === 'formation_registration') {
+        const enrollment = await prisma.enrollment.findFirst({
+          where: {
+            id: enrollmentId,
+            userId,
+            status: 'pending_payment',
+          },
+        });
 
-      if (!enrollment) {
-        return NextResponse.json({ received: true });
-      }
+        if (!enrollment) {
+          return NextResponse.json({ received: true });
+        }
 
-      const price = getDuration(enrollment.duration);
-      if (session.amount_total !== price.stripeCents) {
-        return NextResponse.json({ received: true });
-      }
+        if (session.amount_total !== getExpectedStripeCents(enrollment, 'registration')) {
+          return NextResponse.json({ received: true });
+        }
 
-      await markEnrollmentPaidIfPending(enrollment.id);
+        await markRegistrationPaidIfPending(enrollment.id);
 
-      const customerId =
-        typeof session.customer === 'string' ? session.customer : session.customer?.id;
+        const customerId =
+          typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
-      if (customerId) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { stripeCustomerId: customerId },
+        if (customerId) {
+          await prisma.user.update({
+            where: { id: userId },
+            data: { stripeCustomerId: customerId },
+          });
+        }
+
+        await prisma.enrollment.update({
+          where: { id: enrollment.id },
+          data: { stripeSessionId: session.id, paymentMethod: 'stripe' },
         });
       }
 
-      await prisma.enrollment.update({
-        where: { id: enrollment.id },
-        data: { stripeSessionId: session.id },
-      });
+      if (purpose === 'formation_fee') {
+        const enrollment = await prisma.enrollment.findFirst({
+          where: {
+            id: enrollmentId,
+            userId,
+            status: 'active',
+            formationPaidAt: null,
+          },
+        });
+
+        if (!enrollment) {
+          return NextResponse.json({ received: true });
+        }
+
+        if (session.amount_total !== getExpectedStripeCents(enrollment, 'formation')) {
+          return NextResponse.json({ received: true });
+        }
+
+        await markFormationPaidIfActive(enrollment.id);
+
+        await prisma.enrollment.update({
+          where: { id: enrollment.id },
+          data: { formationStripeSessionId: session.id, formationPaymentMethod: 'stripe' },
+        });
+      }
     }
   } catch {
     return NextResponse.json({ error: 'Erreur traitement' }, { status: 500 });

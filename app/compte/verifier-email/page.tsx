@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import LoadingState from '@/app/components/LoadingState';
 import { MotionCard } from '@/app/components/Motion';
 
 function VerifyEmailContent() {
@@ -13,6 +14,7 @@ function VerifyEmailContent() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
 
   const urlError = searchParams.get('error');
 
@@ -38,9 +40,17 @@ function VerifyEmailContent() {
   useEffect(() => {
     const interval = setInterval(() => {
       checkStatus();
-    }, 5000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [checkStatus]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((value) => (value > 1 ? value - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   useEffect(() => {
     if (urlError === 'expired') {
@@ -72,7 +82,7 @@ function VerifyEmailContent() {
   };
 
   if (loading) {
-    return <p className="text-slate-400">Chargement…</p>;
+    return <LoadingState fullScreen />;
   }
 
   return (
@@ -103,10 +113,14 @@ function VerifyEmailContent() {
         <button
           type="button"
           onClick={resend}
-          disabled={busy}
+          disabled={busy || cooldown > 0}
           className="w-full rounded-lg border border-white/15 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5 disabled:opacity-50 sm:rounded-xl sm:py-3"
         >
-          {busy ? 'Envoi…' : 'Renvoyer l\'email'}
+          {busy
+            ? 'Envoi…'
+            : cooldown > 0
+              ? `Renvoyer dans ${cooldown} s`
+              : 'Renvoyer l\'email'}
         </button>
         <p className="text-center text-[11px] text-slate-500 sm:text-xs">
           Vérifiez aussi vos spams. Cette page se met à jour automatiquement après validation.
@@ -126,7 +140,7 @@ function VerifyEmailContent() {
 export default function VerifierEmailPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-3 py-8 sm:px-4 sm:py-10">
-      <Suspense fallback={<p className="text-slate-400">Chargement…</p>}>
+      <Suspense fallback={<LoadingState fullScreen />}>
         <VerifyEmailContent />
       </Suspense>
     </div>

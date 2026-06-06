@@ -3,6 +3,25 @@ import { prisma } from '@/app/lib/prisma';
 import { sendVerificationEmail } from '@/app/lib/email';
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+const RESEND_COOLDOWN_MS = 60_000;
+
+export function getResendVerificationStatus(expiresAt: Date | null) {
+  if (!expiresAt || expiresAt.getTime() < Date.now()) {
+    return { canResend: true, retryAfterSeconds: 0 };
+  }
+
+  const sentAt = expiresAt.getTime() - TOKEN_TTL_MS;
+  const elapsed = Date.now() - sentAt;
+
+  if (elapsed >= RESEND_COOLDOWN_MS) {
+    return { canResend: true, retryAfterSeconds: 0 };
+  }
+
+  return {
+    canResend: false,
+    retryAfterSeconds: Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000),
+  };
+}
 
 export function generateEmailVerificationToken() {
   return randomBytes(32).toString('hex');
@@ -33,16 +52,16 @@ export async function createAndSendEmailVerification(userId: string, email: stri
   const tokenHash = hashEmailVerificationToken(token);
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
+  const verifyUrl = buildVerificationUrl(token, request);
+  const sent = await sendVerificationEmail(email, verifyUrl);
+
   await prisma.user.update({
     where: { id: userId },
     data: {
       emailVerificationTokenHash: tokenHash,
-      emailVerificationExpiresAt: expiresAt,
+      ...(sent ? { emailVerificationExpiresAt: expiresAt } : {}),
     },
   });
-
-  const verifyUrl = buildVerificationUrl(token, request);
-  const sent = await sendVerificationEmail(email, verifyUrl);
 
   return { verifyUrl, sent };
 }

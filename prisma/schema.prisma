@@ -23,36 +23,132 @@ model User {
 }
 
 model Enrollment {
-  id                String           @id @default(cuid())
-  userId            String
-  firstName         String
-  lastName          String
-  country           String
-  phone             String
-  address           String
-  passportPhotoUrl  String
-  passportPublicId  String
-  domain            FormationDomain
-  formationSession  FormationSession @default(july_2026)
-  duration          FormationDuration
-  daysPerWeek       Int              @default(3)
-  scheduleDays      String[]
-  scheduleHours     String
-  acceptedPrivacy   Boolean          @default(false)
-  amountXof            Int
-  amountUsd            Int
-  status               EnrollmentStatus @default(pending_payment)
-  paymentMethod        PaymentMethod?
-  stripeSessionId      String?          @unique
-  fedapayTransactionId String?          @unique
-  cryptoInvoiceId      String?          @unique
-  paidAt               DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                         String           @id @default(cuid())
+  userId                     String
+  firstName                  String
+  lastName                   String
+  country                    String
+  phone                      String
+  address                    String
+  passportPhotoUrl           String?
+  passportPublicId           String?
+  identityDocumentType       IdentityDocumentType?
+  identityDocumentUrl        String?
+  identityDocumentPublicId   String?
+  identityVerificationStatus IdentityVerificationStatus @default(pending)
+  identityVerifiedAt         DateTime?
+  identityExpiryDate         DateTime?
+  identityExtractedName      String?
+  identityVerificationError  String?
+  domain                     FormationDomain
+  formationSession           FormationSession @default(july_2026)
+  duration                   FormationDuration
+  daysPerWeek                Int              @default(3)
+  scheduleDays               String[]
+  scheduleHours              String
+  acceptedPrivacy            Boolean          @default(false)
+  registrationFeeUsd         Int              @default(0)
+  formationFeeUsd            Int              @default(0)
+  amountXof                  Int
+  amountUsd                  Int
+  status                     EnrollmentStatus @default(pending_payment)
+  paymentMethod              PaymentMethod?
+  stripeSessionId            String?          @unique
+  fedapayTransactionId       String?          @unique
+  cryptoInvoiceId            String?          @unique
+  formationPaymentMethod     PaymentMethod?
+  formationStripeSessionId   String?          @unique
+  formationFedapayTransactionId String?       @unique
+  formationCryptoInvoiceId   String?          @unique
+  registrationPaidAt         DateTime?
+  formationPaidAt            DateTime?
+  paidAt                     DateTime?
+  certificateIssuedAt        DateTime?
+  certificateUrl             String?
+  certificateNumber          String?          @unique
+  certificateSignedBy        String?
+  skillLevel                 SkillLevel?
+  yearsExperience            Int?
+  masteredTechnologies       String[]
+  skillProfileCompletedAt    DateTime?
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+  user                       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grades                     EnrollmentGrade[]
+  receipts                   PaymentReceipt[]
+  resourceDeliveries         ResourceDelivery[]
 
   @@index([userId])
   @@index([status])
+  @@schema("formation")
+}
+
+model PaymentReceipt {
+  id             String        @id @default(cuid())
+  enrollmentId   String
+  phase          PaymentPhase
+  receiptNumber  String        @unique
+  amountUsd      Int
+  amountXof      Int
+  paymentMethod  PaymentMethod
+  reference      String?
+  paidAt         DateTime
+  emailSentAt    DateTime?
+  createdAt      DateTime      @default(now())
+  enrollment     Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, phase])
+  @@index([enrollmentId])
+  @@schema("formation")
+}
+
+model LearningResource {
+  id               String               @id @default(cuid())
+  title            String
+  description      String?
+  type             LearningResourceType
+  fileUrl          String?
+  filePublicId     String?
+  externalUrl      String?
+  domain           FormationDomain?
+  formationSession FormationSession?
+  duration         FormationDuration?
+  published        Boolean              @default(false)
+  publishedAt      DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deliveries       ResourceDelivery[]
+
+  @@index([published])
+  @@index([type])
+  @@schema("formation")
+}
+
+model ResourceDelivery {
+  id           String           @id @default(cuid())
+  resourceId   String
+  enrollmentId String
+  deliveredAt  DateTime         @default(now())
+  emailSentAt  DateTime?
+  resource     LearningResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, enrollmentId])
+  @@index([enrollmentId])
+  @@schema("formation")
+}
+
+model EnrollmentGrade {
+  id           String     @id @default(cuid())
+  enrollmentId String
+  title        String
+  score        Float
+  maxScore     Float      @default(20)
+  comment      String?
+  gradedAt     DateTime   @default(now())
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId])
   @@schema("formation")
 }
 
@@ -84,6 +180,7 @@ enum FormationSession {
 
 enum EnrollmentStatus {
   pending_payment
+  active
   paid
   cancelled
 
@@ -98,9 +195,46 @@ enum PaymentMethod {
   @@schema("formation")
 }
 
+enum IdentityDocumentType {
+  id_card
+  passport
+
+  @@schema("formation")
+}
+
+enum IdentityVerificationStatus {
+  pending
+  verified
+  failed
+  expired
+
+  @@schema("formation")
+}
+
+enum PaymentPhase {
+  registration
+  formation
+
+  @@schema("formation")
+}
+
 enum UserRole {
   user
   admin
+
+  @@schema("formation")
+}
+
+enum LearningResourceType {
+  course_pdf
+  tutorial
+
+  @@schema("formation")
+}
+
+enum SkillLevel {
+  beginner
+  experienced
 
   @@schema("formation")
 }

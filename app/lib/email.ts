@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import { getAdminEmails } from '@/app/lib/admin';
+import type { PaymentPhase } from '@prisma/client';
 
 function buildVerificationHtml(verifyUrl: string) {
   return `
@@ -101,10 +103,7 @@ export async function sendContactEmail(params: {
   }
 }
 
-export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
-  const subject = 'Vérifiez votre email — The Code²';
-  const html = buildVerificationHtml(verifyUrl);
-
+async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   try {
     if (isSmtpConfigured()) {
       return await sendViaSmtp(to, subject, html);
@@ -116,4 +115,206 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
   } catch {
     return false;
   }
+}
+
+export async function sendPaymentReceiptEmail(params: {
+  to: string;
+  receiptNumber: string;
+  phaseLabel: string;
+  amountUsd: number;
+  downloadUrl: string;
+  receiptHtml: string;
+}): Promise<boolean> {
+  const subject = `Reçu de paiement ${params.receiptNumber} — The Code²`;
+  const amount =
+    Number.isInteger(params.amountUsd) ? String(params.amountUsd) : params.amountUsd.toFixed(2);
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
+      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <p>Bonjour,</p>
+      <p>Votre paiement a bien été enregistré. Voici votre reçu :</p>
+      <table style="width:100%;margin:16px 0;font-size:14px">
+        <tr><td style="color:#64748b;padding:4px 0">N° reçu</td><td><strong>${escapeHtml(params.receiptNumber)}</strong></td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Type</td><td>${escapeHtml(params.phaseLabel)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Montant</td><td><strong>${amount} $ USD</strong></td></tr>
+      </table>
+      <p style="margin:24px 0">
+        <a href="${params.downloadUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+          Télécharger le reçu
+        </a>
+      </p>
+      <p style="font-size:13px;color:#64748b">
+        Vous pouvez aussi retrouver vos reçus à tout moment dans votre
+        <a href="${params.downloadUrl.replace(/\/api\/espace\/receipts\/[^/]+$/, '/espace')}" style="color:#241bff">espace candidat</a>.
+      </p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">Merci de votre confiance — The Code²</p>
+    </div>
+  `;
+
+  return sendEmail(params.to, subject, html);
+}
+
+export async function sendLearningResourceEmail(params: {
+  to: string;
+  title: string;
+  typeLabel: string;
+  espaceUrl: string;
+}): Promise<boolean> {
+  const subject = `Nouveau contenu disponible — ${params.title}`;
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
+      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <p>Bonjour,</p>
+      <p>Un nouveau contenu de formation est disponible dans votre espace candidat :</p>
+      <p style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
+        <strong>${escapeHtml(params.title)}</strong><br/>
+        <span style="color:#64748b;font-size:14px">${escapeHtml(params.typeLabel)}</span>
+      </p>
+      <p style="margin:24px 0">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+          Accéder à mon espace
+        </a>
+      </p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+    </div>
+  `;
+
+  return sendEmail(params.to, subject, html);
+}
+
+export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
+  const subject = 'Vérifiez votre email — The Code²';
+  const html = buildVerificationHtml(verifyUrl);
+  return sendEmail(to, subject, html);
+}
+
+async function sendEmailsToAdmins(subject: string, html: string): Promise<number> {
+  const recipients = getAdminEmails();
+  const fallback = getContactRecipient();
+  const toList = recipients.length > 0 ? recipients : fallback ? [fallback] : [];
+
+  let sent = 0;
+  for (const to of toList) {
+    if (await sendEmail(to, subject, html)) sent += 1;
+  }
+  return sent;
+}
+
+export async function sendGradePublishedEmail(params: {
+  to: string;
+  firstName: string;
+  gradeTitle: string;
+  score: number;
+  maxScore: number;
+  espaceUrl: string;
+}): Promise<boolean> {
+  const subject = `Nouvelle note publiée — ${params.gradeTitle}`;
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
+      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <p>Bonjour ${escapeHtml(params.firstName)},</p>
+      <p>Une nouvelle évaluation a été publiée dans votre espace candidat :</p>
+      <p style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
+        <strong>${escapeHtml(params.gradeTitle)}</strong><br/>
+        <span style="color:#64748b;font-size:14px">Note : ${params.score} / ${params.maxScore}</span>
+      </p>
+      <p style="margin:24px 0">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+          Voir mes notes
+        </a>
+      </p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+    </div>
+  `;
+
+  return sendEmail(params.to, subject, html);
+}
+
+export async function sendCertificateReadyEmail(params: {
+  to: string;
+  firstName: string;
+  espaceUrl: string;
+}): Promise<boolean> {
+  const subject = 'Votre certificat est disponible — The Code²';
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
+      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <p>Bonjour ${escapeHtml(params.firstName)},</p>
+      <p>Félicitations ! Votre certificat de fin de formation est maintenant disponible dans votre espace candidat.</p>
+      <p style="margin:24px 0">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+          Télécharger mon certificat
+        </a>
+      </p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+    </div>
+  `;
+
+  return sendEmail(params.to, subject, html);
+}
+
+export async function sendSessionBroadcastEmail(params: {
+  to: string;
+  firstName: string;
+  subject: string;
+  message: string;
+  espaceUrl: string;
+}): Promise<boolean> {
+  const subject = `${params.subject} — The Code²`;
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
+      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <p>Bonjour ${escapeHtml(params.firstName)},</p>
+      <div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;white-space:pre-wrap;font-size:14px;line-height:1.6">
+        ${escapeHtml(params.message)}
+      </div>
+      <p style="margin:24px 0">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+          Accéder à mon espace
+        </a>
+      </p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+    </div>
+  `;
+
+  return sendEmail(params.to, subject, html);
+}
+
+export async function sendAdminPaymentNotificationEmail(params: {
+  phase: PaymentPhase;
+  phaseLabel: string;
+  amountUsd: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  domain: string;
+  session: string;
+  duration: string;
+  paymentMethod: string;
+  adminUrl: string;
+}): Promise<number> {
+  const amount =
+    Number.isInteger(params.amountUsd) ? String(params.amountUsd) : params.amountUsd.toFixed(2);
+  const subject = `[Paiement] ${params.phaseLabel} — ${params.firstName} ${params.lastName}`;
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;color:#1e293b">
+      <h2 style="color:#241bff">Nouveau paiement reçu</h2>
+      <table style="width:100%;margin:16px 0;font-size:14px">
+        <tr><td style="color:#64748b;padding:4px 0">Candidat</td><td><strong>${escapeHtml(params.firstName)} ${escapeHtml(params.lastName)}</strong></td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Email</td><td>${escapeHtml(params.email)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Type</td><td>${escapeHtml(params.phaseLabel)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Montant</td><td><strong>${amount} $ USD</strong></td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Méthode</td><td>${escapeHtml(params.paymentMethod)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Parcours</td><td>${escapeHtml(params.domain)} — ${escapeHtml(params.duration)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Session</td><td>${escapeHtml(params.session)}</td></tr>
+      </table>
+      <p style="margin:20px 0">
+        <a href="${params.adminUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+          Voir dans l'admin
+        </a>
+      </p>
+    </div>
+  `;
+
+  return sendEmailsToAdmins(subject, html);
 }

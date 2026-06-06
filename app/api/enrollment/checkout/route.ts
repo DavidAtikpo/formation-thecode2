@@ -6,18 +6,17 @@ import {
   apiForbidden,
   apiServerError,
   apiUnauthorized,
-  isAllowedPassportUrl,
-  isPassportOwnedByUser,
 } from '@/app/lib/api-security';
 import {
   assertUserCanEnroll,
   cancelStalePendingEnrollments,
 } from '@/app/lib/enrollment-security';
+import { createEnrollmentPayment } from '@/app/lib/enrollment-payments';
+import { isCryptoConfigured } from '@/app/lib/crypto-payments';
+import { isFedapayConfigured } from '@/app/lib/fedapay';
 import { getStripe } from '@/app/lib/stripe';
-import { createCryptoInvoice, isCryptoConfigured } from '@/app/lib/crypto-payments';
-import { createFedapayPayment, isFedapayConfigured } from '@/app/lib/fedapay';
-import { getBaseUrl, parseEnrollmentCheckoutBody } from '@/app/lib/enrollment-checkout';
-import { getDuration } from '@/app/lib/formation-config';
+import { parseEnrollmentCheckoutBody } from '@/app/lib/enrollment-checkout';
+import { getDuration, usdToXof } from '@/app/lib/formation-config';
 
 export const runtime = 'nodejs';
 
@@ -34,13 +33,6 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
-
-  if (!isPassportOwnedByUser(data.passportPublicId, userId)) {
-    return apiError('Photo passeport invalide', 400);
-  }
-  if (!isAllowedPassportUrl(data.passportPhotoUrl)) {
-    return apiError('Photo passeport invalide', 400);
-  }
 
   const canEnroll = await assertUserCanEnroll(userId);
   if (!canEnroll.ok) {
@@ -65,7 +57,8 @@ export async function POST(request: Request) {
 
   await cancelStalePendingEnrollments(userId);
 
-  const amountXof = Math.round(price.amountUsd * 600);
+  const registrationUsd = price.registrationFeeUsd;
+  const formationUsd = price.formationFeeUsd;
 
   const enrollment = await prisma.enrollment.create({
     data: {
@@ -75,8 +68,6 @@ export async function POST(request: Request) {
       country: data.country,
       phone: data.phone,
       address: data.address,
-      passportPhotoUrl: data.passportPhotoUrl,
-      passportPublicId: data.passportPublicId,
       domain: data.domain,
       formationSession: data.formationSession,
       duration: data.duration,
@@ -84,95 +75,35 @@ export async function POST(request: Request) {
       scheduleDays: data.scheduleDays,
       scheduleHours: data.scheduleHours,
       acceptedPrivacy: data.acceptedPrivacy,
-      amountXof,
-      amountUsd: price.amountUsdInt,
+      registrationFeeUsd: registrationUsd,
+      formationFeeUsd: formationUsd,
+      amountXof: usdToXof(registrationUsd),
+      amountUsd: Math.round(registrationUsd),
       paymentMethod: data.paymentMethod,
       status: 'pending_payment',
     },
   });
 
-  const base = getBaseUrl(request);
-
   try {
-    if (data.paymentMethod === 'stripe') {
-      const stripe = getStripe()!;
-      const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: 'usd',
-              unit_amount: price.stripeCents,
-              product_data: {
-                name: `Formation The Code² — ${data.domain}`,
-                description: `${price.label} — ${data.firstName} ${data.lastName}`,
-              },
-            },
-            quantity: 1,
-          },
-        ],
-        success_url: `${base}/inscription/succes?provider=stripe&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${base}/inscription?cancelled=1`,
-        metadata: {
-          enrollmentId: enrollment.id,
-          userId,
-          purpose: 'formation_enrollment',
-        },
-        client_reference_id: enrollment.id,
-        ...(user.stripeCustomerId
-          ? { customer: user.stripeCustomerId }
-          : { customer_email: user.email }),
-      });
-
-      await prisma.enrollment.update({
-        where: { id: enrollment.id },
-        data: { stripeSessionId: session.id },
-      });
-
-      if (!session.url) {
-        await prisma.enrollment.delete({ where: { id: enrollment.id } }).catch(() => {});
-        return apiServerError();
-      }
-
-      return NextResponse.json({ url: session.url });
-    }
-
-    if (data.paymentMethod === 'fedapay') {
-      const fedapay = await createFedapayPayment({
-        description: `Formation The Code² — ${price.label} — ${data.firstName} ${data.lastName}`,
-        amountXof,
-        callbackUrl: `${base}/inscription/succes?provider=fedapay`,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: user.email,
-        phone: data.phone,
-        country: data.country,
-      });
-
-      await prisma.enrollment.update({
-        where: { id: enrollment.id },
-        data: { fedapayTransactionId: fedapay.transactionId },
-      });
-
-      return NextResponse.json({ url: fedapay.url });
-    }
-
-    const crypto = await createCryptoInvoice({
-      priceAmount: price.amountUsd,
-      orderId: enrollment.id,
-      orderDescription: `Formation The Code² — ${price.label} — ${data.firstName} ${data.lastName}`,
-      ipnCallbackUrl: `${base}/api/webhooks/crypto`,
-      successUrl: `${base}/inscription/succes?provider=crypto&enrollment_id=${enrollment.id}`,
-      cancelUrl: `${base}/inscription?cancelled=1`,
+    const payment = await createEnrollmentPayment({
+      enrollmentId: enrollment.id,
+      userId,
+      userEmail: user.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phone: data.phone,
+      country: data.country,
+      durationLabel: price.label,
+      domain: data.domain,
+      paymentMethod: data.paymentMethod,
+      phase: 'registration',
+      amountUsd: registrationUsd,
+      stripeCents: price.registrationStripeCents,
+      stripeCustomerId: user.stripeCustomerId,
+      request,
     });
 
-    await prisma.enrollment.update({
-      where: { id: enrollment.id },
-      data: { cryptoInvoiceId: crypto.invoiceId },
-    });
-
-    return NextResponse.json({ url: crypto.url });
+    return NextResponse.json({ url: payment.url });
   } catch {
     await prisma.enrollment.delete({ where: { id: enrollment.id } }).catch(() => {});
     return apiError('Erreur lors de la création du paiement', 502);

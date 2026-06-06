@@ -9,7 +9,7 @@ function createClient() {
     throw new Error('DATABASE_URL manquant dans .env');
   }
   const adapter = new PrismaPg({ connectionString: url });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({ adapter, log: [] });
 }
 
 export const prisma = globalForPrisma.prisma ?? createClient();
