@@ -11,7 +11,9 @@ export type AdminSkillProfile = {
 };
 
 type EnrollmentWithRelations = Enrollment & {
-  user?: Partial<Pick<User, 'email' | 'emailVerified' | 'createdAt' | 'id'>>;
+  user?: Partial<
+    Pick<User, 'email' | 'emailVerified' | 'createdAt' | 'id' | 'blockedAt' | 'role'>
+  >;
   grades?: EnrollmentGrade[];
   receipts?: PaymentReceipt[];
 };
@@ -55,11 +57,23 @@ export function serializeSkillProfile(enrollment: Pick<
 }
 
 export function serializeAdminEnrollment(enrollment: EnrollmentWithRelations) {
-  const { skillProfileCompletedAt, ...rest } = enrollment;
+  const { skillProfileCompletedAt, user, ...rest } = enrollment;
 
   return {
     ...rest,
     skillProfileCompletedAt: skillProfileCompletedAt?.toISOString() ?? null,
     skillProfile: serializeSkillProfile(enrollment),
+    user: user
+      ? {
+          ...user,
+          createdAt:
+            user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
+          blockedAt:
+            user.blockedAt instanceof Date
+              ? user.blockedAt.toISOString()
+              : (user.blockedAt ?? null),
+          isBlocked: Boolean(user.blockedAt),
+        }
+      : undefined,
   };
 }

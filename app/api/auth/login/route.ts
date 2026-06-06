@@ -24,6 +24,10 @@ export async function POST(request: Request) {
       return apiError('Email ou mot de passe incorrect', 401);
     }
 
+    if (user.blockedAt) {
+      return apiError('Ce compte a été suspendu. Contactez The Code².', 403);
+    }
+
     await syncAdminRole(user.id, user.email);
     const current = await prisma.user.findUnique({ where: { id: user.id } }) ?? user;
 

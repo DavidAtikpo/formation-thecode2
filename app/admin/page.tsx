@@ -83,7 +83,15 @@ type EnrollmentRow = {
   };
   createdAt: string;
   updatedAt?: string;
-  user: { email: string; emailVerified: boolean; createdAt: string };
+  user: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    createdAt: string;
+    blockedAt: string | null;
+    isBlocked?: boolean;
+    role?: string;
+  };
   grades?: { id: string; title: string; score: number; maxScore: number; comment: string | null }[];
   receipts?: ReceiptRow[];
 };
@@ -330,6 +338,58 @@ export default function AdminPage() {
     }
   };
 
+  const setUserBlocked = async (userId: string, blocked: boolean) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocked }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Action impossible');
+      if (selected) {
+        const detail = await fetch(`/api/admin/enrollments/${selected.id}`, {
+          credentials: 'include',
+        });
+        if (detail.ok) {
+          setSelected((await detail.json()).enrollment);
+        }
+      }
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteUserAccount = async (userId: string, email: string) => {
+    const confirmed = window.confirm(
+      `Supprimer définitivement le compte ${email} ?\n\nToutes les inscriptions, notes et données associées seront effacées. Cette action est irréversible.`,
+    );
+    if (!confirmed) return;
+
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Suppression impossible');
+      setSelected(null);
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const updateStatus = async (id: string, status: EnrollmentStatus) => {
     setBusy(true);
     setError(null);
@@ -493,6 +553,11 @@ export default function AdminPage() {
                         <td className="px-3 py-3">
                           <p className="font-medium text-white">
                             {row.firstName} {row.lastName}
+                            {row.user.blockedAt && (
+                              <span className="ml-2 rounded-full border border-red-400/40 bg-red-400/10 px-1.5 py-0.5 text-[10px] font-medium text-red-300">
+                                Bloqué
+                              </span>
+                            )}
                           </p>
                           <p className="text-[11px] text-slate-500 sm:text-xs">{row.user.email}</p>
                         </td>
@@ -610,6 +675,14 @@ export default function AdminPage() {
                     label="Email vérifié"
                     value={selected.user.emailVerified ? 'Oui' : 'Non'}
                   />
+                  <Row
+                    label="Statut compte"
+                    value={
+                      selected.user.blockedAt
+                        ? `Bloqué depuis le ${formatDate(selected.user.blockedAt)}`
+                        : 'Actif'
+                    }
+                  />
                   <Row label="Compte créé" value={formatDate(selected.user.createdAt)} />
                   <Row
                     label="Confidentialité"
@@ -622,6 +695,39 @@ export default function AdminPage() {
                     }
                   />
                 </dl>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selected.user.blockedAt ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setUserBlocked(selected.user.id, false)}
+                      className="rounded-lg border border-green-400/40 px-3 py-1.5 text-xs font-semibold text-green-300 hover:bg-green-400/10 disabled:opacity-50"
+                    >
+                      Débloquer le compte
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setUserBlocked(selected.user.id, true)}
+                      className="rounded-lg border border-amber-400/40 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 disabled:opacity-50"
+                    >
+                      Bloquer le compte
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => deleteUserAccount(selected.user.id, selected.user.email)}
+                    className="rounded-lg border border-red-400/40 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-400/10 disabled:opacity-50"
+                  >
+                    Supprimer le compte
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] text-slate-500">
+                  Bloquer empêche la connexion. Supprimer efface le compte et toutes ses données
+                  (inscriptions, notes, reçus).
+                </p>
               </DetailSection>
 
               <DetailSection title="Coordonnées">

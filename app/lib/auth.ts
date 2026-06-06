@@ -42,15 +42,28 @@ export async function verifySessionToken(token: string) {
   return sub;
 }
 
+async function resolveSessionUserIdFromToken(token: string) {
+  try {
+    const userId = await verifySessionToken(token);
+    if (!userId) return null;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { blockedAt: true },
+    });
+
+    if (!user || user.blockedAt) return null;
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
 export async function getSessionUserId(): Promise<string | null> {
   const store = await cookies();
   const cookieToken = store.get(COOKIE_NAME)?.value;
   if (cookieToken) {
-    try {
-      return await verifySessionToken(cookieToken);
-    } catch {
-      return null;
-    }
+    return resolveSessionUserIdFromToken(cookieToken);
   }
 
   const h = await headers();
@@ -58,11 +71,7 @@ export async function getSessionUserId(): Promise<string | null> {
   if (auth?.startsWith('Bearer ')) {
     const bearer = auth.slice(7).trim();
     if (bearer) {
-      try {
-        return await verifySessionToken(bearer);
-      } catch {
-        return null;
-      }
+      return resolveSessionUserIdFromToken(bearer);
     }
   }
 
@@ -89,9 +98,9 @@ export async function getVerifiedSessionUserId(): Promise<string | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { emailVerified: true },
+    select: { emailVerified: true, blockedAt: true },
   });
 
-  if (!user?.emailVerified) return null;
+  if (!user?.emailVerified || user.blockedAt) return null;
   return userId;
 }

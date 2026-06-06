@@ -25,7 +25,16 @@ export async function GET(_request: Request, context: RouteContext) {
   const enrollment = await prisma.enrollment.findUnique({
     where: { id },
     include: {
-      user: { select: { id: true, email: true, emailVerified: true, createdAt: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          emailVerified: true,
+          createdAt: true,
+          blockedAt: true,
+          role: true,
+        },
+      },
       grades: { orderBy: { gradedAt: 'desc' } },
       receipts: { orderBy: { paidAt: 'desc' } },
     },
@@ -124,7 +133,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     where: { id },
     data,
     include: {
-      user: { select: { id: true, email: true, emailVerified: true, createdAt: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          emailVerified: true,
+          createdAt: true,
+          blockedAt: true,
+          role: true,
+        },
+      },
       grades: { orderBy: { gradedAt: 'desc' } },
       receipts: { orderBy: { paidAt: 'desc' } },
     },

@@ -16,6 +16,7 @@ model User {
   emailVerificationTokenHash String?
   emailVerificationExpiresAt DateTime?
   createdAt                  DateTime     @default(now())
+  blockedAt                  DateTime?
   stripeCustomerId           String?      @unique
   enrollments                Enrollment[]
 

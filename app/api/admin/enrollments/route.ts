@@ -36,7 +36,16 @@ export async function GET(request: Request) {
     where: Object.keys(where).length > 0 ? where : undefined,
     orderBy: { createdAt: 'desc' },
     include: {
-      user: { select: { email: true, emailVerified: true, createdAt: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          emailVerified: true,
+          createdAt: true,
+          blockedAt: true,
+          role: true,
+        },
+      },
     },
   });
 
