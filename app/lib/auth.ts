@@ -6,8 +6,13 @@ import { prisma } from '@/app/lib/prisma';
 const COOKIE_NAME = 'thecode2_token';
 
 function getSecret() {
-  const s = process.env.AUTH_SECRET;
-  if (s) return new TextEncoder().encode(s);
+  const s = process.env.AUTH_SECRET?.trim();
+  if (s) {
+    if (process.env.NODE_ENV === 'production' && s.length < 32) {
+      throw new Error('AUTH_SECRET trop court (minimum 32 caractères en production)');
+    }
+    return new TextEncoder().encode(s);
+  }
   if (process.env.NODE_ENV === 'development') {
     return new TextEncoder().encode('dev-insecure-thecode2-secret');
   }

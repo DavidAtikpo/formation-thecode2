@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-type User = { id: string; email: string };
+type User = { id: string; email: string; isAdmin?: boolean };
 
 export default function Header() {
   const [user, setUser] = useState<User | null>(null);
@@ -43,9 +43,29 @@ export default function Header() {
           </div>
         </Link>
 
-        <nav className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+        <nav className="flex shrink-0 flex-wrap items-center justify-end gap-1 sm:gap-2.5">
+          <Link
+            href="/apropos"
+            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
+          >
+            À propos
+          </Link>
+          <Link
+            href="/contact"
+            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
+          >
+            Contact
+          </Link>
           {user ? (
             <>
+              {user.isAdmin && (
+                <Link
+                  href="/admin"
+                  className="hidden px-1 text-xs text-slate-300 hover:text-white sm:inline sm:text-sm"
+                >
+                  Admin
+                </Link>
+              )}
               <Link href="/inscription" className={btnClass}>
                 <span className="hidden sm:inline">Mon inscription</span>
                 <span className="sm:hidden">Inscription</span>

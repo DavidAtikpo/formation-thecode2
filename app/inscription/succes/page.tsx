@@ -4,12 +4,13 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { MotionCard } from '@/app/components/Motion';
-import { getDomain } from '@/app/lib/formation-config';
+import { getDomain, getFormationSession } from '@/app/lib/formation-config';
 
 type Enrollment = {
   firstName: string;
   lastName: string;
   domain: string;
+  formationSession: string;
   duration: string;
   status: string;
 };
@@ -87,6 +88,7 @@ function SuccessContent() {
   }
 
   const domainLabel = getDomain(enrollment.domain as Parameters<typeof getDomain>[0]).label;
+  const session = getFormationSession(enrollment.formationSession as Parameters<typeof getFormationSession>[0]);
 
   return (
     <MotionCard className="text-center">
@@ -97,10 +99,12 @@ function SuccessContent() {
       </p>
       <div className="mx-auto mt-6 max-w-md rounded-xl border border-white/10 bg-white/5 p-6 text-left text-sm">
         <p><span className="text-slate-500">Domaine :</span> {domainLabel}</p>
+        <p className="mt-1"><span className="text-slate-500">Session :</span> {session.period}</p>
         <p className="mt-1"><span className="text-slate-500">Statut :</span> <span className="text-green-400">Payé ✓</span></p>
       </div>
       <p className="mt-6 text-slate-400">
-        Votre certificat sera généré à la fin de la formation. Nous vous contacterons bientôt !
+        Deux rencontres de préparation auront lieu avant le début de votre session.
+        Nous vous contacterons pour les dates. Votre certificat sera généré à la fin de la formation.
       </p>
       <a
         href="https://wa.me/22892591228"

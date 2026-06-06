@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { getSessionUserId } from '@/app/lib/auth';
+import { isAdminUser } from '@/app/lib/admin';
 
 export async function GET() {
   const userId = await getSessionUserId();
@@ -13,6 +14,7 @@ export async function GET() {
     select: {
       id: true,
       email: true,
+      role: true,
       emailVerified: true,
       enrollments: {
         where: { status: 'paid' },
@@ -32,8 +34,8 @@ export async function GET() {
   });
 
   if (!user) {
-    return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 });
+    return NextResponse.json(null);
   }
 
-  return NextResponse.json(user);
+  return NextResponse.json({ ...user, isAdmin: isAdminUser(user) });
 }

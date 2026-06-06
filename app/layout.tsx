@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Geist } from 'next/font/google';
 import './globals.css';
 import Header from './components/Header';
@@ -10,7 +11,7 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: 'The Code² — Formation en ligne',
-  description: 'Apprenez, créez, maîtrisez et propulsez votre carrière avec The Code²',
+  description: 'Formation 100 % pratique en développement web et digital — apprenez en codant, pas en théorie. The Code²',
   icons: {
     icon: [{ url: '/logo.png', type: 'image/png' }],
     shortcut: '/logo.png',
@@ -26,6 +27,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1">{children}</main>
         <footer className="border-t border-white/10 py-4 text-center text-xs text-slate-500 sm:py-5 sm:text-sm">
           <div className="mx-auto w-full max-w-6xl px-3 sm:px-6">
+            <nav className="mb-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+              <Link href="/apropos" className="text-slate-400 transition hover:text-brand-400">
+                À propos
+              </Link>
+              <Link href="/contact" className="text-slate-400 transition hover:text-brand-400">
+                Contact
+              </Link>
+              <Link href="/confidentialite" className="text-slate-400 transition hover:text-brand-400">
+                Confidentialité
+              </Link>
+            </nav>
             <p>© {new Date().getFullYear()} The Code² — Formation en développement web</p>
             <a
               href="https://wa.me/22892591228"

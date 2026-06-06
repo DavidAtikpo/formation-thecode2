@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { prisma } from '@/app/lib/prisma';
+import { markEnrollmentPaidIfPending } from '@/app/lib/enrollment-security';
+import { getDuration } from '@/app/lib/formation-config';
 import { getStripe } from '@/app/lib/stripe';
 
 export const runtime = 'nodejs';
@@ -22,42 +24,64 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(raw, sig, secret);
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Signature invalide';
-    console.error('[stripe webhook]', msg);
-    return NextResponse.json({ error: msg }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: 'Signature invalide' }, { status: 400 });
   }
 
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      if (session.metadata?.purpose === 'formation_enrollment') {
-        const enrollmentId = session.metadata.enrollmentId ?? session.client_reference_id;
-        const userId = session.metadata.userId;
-        const customerId =
-          typeof session.customer === 'string' ? session.customer : session.customer?.id;
-
-        if (enrollmentId) {
-          await prisma.enrollment.update({
-            where: { id: enrollmentId },
-            data: {
-              status: 'paid',
-              paidAt: new Date(),
-              stripeSessionId: session.id,
-            },
-          });
-
-          if (userId && customerId) {
-            await prisma.user.update({
-              where: { id: userId },
-              data: { stripeCustomerId: customerId },
-            });
-          }
-        }
+      if (session.payment_status !== 'paid') {
+        return NextResponse.json({ received: true });
       }
+
+      const enrollmentId = session.metadata?.enrollmentId ?? session.client_reference_id;
+      const userId = session.metadata?.userId;
+
+      if (
+        session.metadata?.purpose !== 'formation_enrollment'
+        || !enrollmentId
+        || !userId
+      ) {
+        return NextResponse.json({ received: true });
+      }
+
+      const enrollment = await prisma.enrollment.findFirst({
+        where: {
+          id: enrollmentId,
+          userId,
+          paymentMethod: 'stripe',
+          status: 'pending_payment',
+        },
+      });
+
+      if (!enrollment) {
+        return NextResponse.json({ received: true });
+      }
+
+      const price = getDuration(enrollment.duration);
+      if (session.amount_total !== price.stripeCents) {
+        return NextResponse.json({ received: true });
+      }
+
+      await markEnrollmentPaidIfPending(enrollment.id);
+
+      const customerId =
+        typeof session.customer === 'string' ? session.customer : session.customer?.id;
+
+      if (customerId) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { stripeCustomerId: customerId },
+        });
+      }
+
+      await prisma.enrollment.update({
+        where: { id: enrollment.id },
+        data: { stripeSessionId: session.id },
+      });
     }
-  } catch (e: unknown) {
-    console.error('[stripe webhook handler]', e);
+  } catch {
     return NextResponse.json({ error: 'Erreur traitement' }, { status: 500 });
   }
 

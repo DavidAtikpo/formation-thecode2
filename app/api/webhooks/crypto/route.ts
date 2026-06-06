@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
+import { markEnrollmentPaidIfPending } from '@/app/lib/enrollment-security';
+import { getDuration } from '@/app/lib/formation-config';
 import {
   isCryptoWebhookConfigured,
   isCryptoWebhookPaid,
@@ -10,10 +12,7 @@ export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   if (!isCryptoWebhookConfigured()) {
-    return NextResponse.json(
-      { error: 'IPN Secret non configuré — générez-le dans NOWPayments Store Settings' },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: 'Webhook non configuré' }, { status: 503 });
   }
 
   const signature = request.headers.get('x-nowpayments-sig') ?? '';
@@ -37,12 +36,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    await prisma.enrollment.updateMany({
-      where: { id: orderId, status: 'pending_payment', paymentMethod: 'crypto' },
-      data: { status: 'paid', paidAt: new Date() },
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        id: orderId,
+        status: 'pending_payment',
+        paymentMethod: 'crypto',
+      },
     });
-  } catch (e: unknown) {
-    console.error('[crypto webhook handler]', e);
+
+    if (!enrollment) {
+      return NextResponse.json({ received: true });
+    }
+
+    const expectedUsd = getDuration(enrollment.duration).amountUsd;
+    const priceAmount = payload.price_amount;
+    if (typeof priceAmount === 'number' && priceAmount !== expectedUsd) {
+      return NextResponse.json({ received: true });
+    }
+
+    await markEnrollmentPaidIfPending(enrollment.id);
+  } catch {
     return NextResponse.json({ error: 'Erreur traitement' }, { status: 500 });
   }
 

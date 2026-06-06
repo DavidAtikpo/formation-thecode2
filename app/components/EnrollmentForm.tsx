@@ -6,14 +6,17 @@ import type { PaymentMethodId } from '@/app/lib/enrollment-checkout';
 import {
   DOMAINS,
   DURATIONS,
+  FORMATION_SESSIONS,
   WEEK_DAYS,
   HOUR_SLOTS,
   formatUsd,
   getDuration,
   getDomain,
+  getFormationSession,
   getDurationTotalUsd,
   type DomainId,
   type DurationId,
+  type SessionId,
 } from '@/app/lib/formation-config';
 
 type FormData = {
@@ -25,6 +28,7 @@ type FormData = {
   passportPhotoUrl: string;
   passportPublicId: string;
   domain: DomainId | '';
+  formationSession: SessionId | '';
   duration: DurationId | '';
   scheduleDays: string[];
   scheduleHours: string;
@@ -34,6 +38,7 @@ type FormData = {
 const STEPS = [
   'Informations',
   'Domaine',
+  'Session',
   'Durée',
   'Planning',
   'Confirmation',
@@ -55,6 +60,7 @@ export default function EnrollmentForm() {
     passportPhotoUrl: '',
     passportPublicId: '',
     domain: '',
+    formationSession: '',
     duration: '',
     scheduleDays: [],
     scheduleHours: '',
@@ -103,12 +109,13 @@ export default function EnrollmentForm() {
       if (!form.passportPhotoUrl) return 'Photo passeport requise';
     }
     if (step === 1 && !form.domain) return 'Sélectionnez un domaine';
-    if (step === 2 && !form.duration) return 'Sélectionnez une durée';
-    if (step === 3) {
+    if (step === 2 && !form.formationSession) return 'Sélectionnez une session de formation';
+    if (step === 3 && !form.duration) return 'Sélectionnez une durée';
+    if (step === 4) {
       if (form.scheduleDays.length !== 3) return 'Choisissez exactement 3 jours';
       if (!form.scheduleHours) return 'Choisissez un créneau horaire';
     }
-    if (step === 4 && !form.acceptedPrivacy) return 'Acceptez la politique de confidentialité';
+    if (step === 5 && !form.acceptedPrivacy) return 'Acceptez la politique de confidentialité';
     return null;
   };
 
@@ -235,8 +242,39 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 2: Duration */}
+        {/* Step 2: Formation session */}
         {step === 2 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-white sm:text-xl">Session de formation</h2>
+            <p className="text-xs leading-relaxed text-slate-400 sm:text-sm">
+              Choisissez la période qui vous convient.{' '}
+              <strong className="font-medium text-slate-200">
+                Deux rencontres de préparation
+              </strong>{' '}
+              (Design Thinking et Scrum) auront lieu avant le début de votre session.
+            </p>
+            <div className="grid gap-2 sm:gap-3">
+              {FORMATION_SESSIONS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => update({ formationSession: s.id })}
+                  className={`rounded-lg border p-3 text-left transition sm:rounded-xl sm:p-3.5 ${
+                    form.formationSession === s.id
+                      ? 'border-brand-400 bg-brand-400/10 ring-1 ring-brand-400'
+                      : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-white">{s.label}</p>
+                  <p className="mt-1 text-xs text-brand-300 sm:text-sm">{s.period}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Duration */}
+        {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-white sm:text-xl">Durée de la formation</h2>
             <div className="grid gap-2 sm:gap-3">
@@ -293,8 +331,8 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 3: Schedule */}
-        {step === 3 && (
+        {/* Step 4: Schedule */}
+        {step === 4 && (
           <div className="space-y-4 sm:space-y-5">
             <h2 className="text-lg font-bold text-white sm:text-xl">Planning — 3 jours par semaine</h2>
             <div>
@@ -340,8 +378,8 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 4: Confirmation */}
-        {step === 4 && (
+        {/* Step 5: Confirmation */}
+        {step === 5 && (
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-white sm:text-xl">Récapitulatif</h2>
             <div className="space-y-1.5 rounded-lg bg-white/5 p-3 text-xs sm:rounded-xl sm:p-3.5 sm:text-sm">
@@ -350,6 +388,12 @@ export default function EnrollmentForm() {
               <Row label="Téléphone" value={form.phone} />
               <Row label="Adresse" value={form.address} />
               {form.domain && <Row label="Domaine" value={getDomain(form.domain).label} />}
+              {form.formationSession && (
+                <Row
+                  label="Session"
+                  value={`${getFormationSession(form.formationSession).label} — ${getFormationSession(form.formationSession).period}`}
+                />
+              )}
               {price && <Row label="Durée" value={price.label} />}
               <Row label="Jours" value={form.scheduleDays.map((d) => WEEK_DAYS.find((w) => w.id === d)?.label).join(', ')} />
               <Row label="Horaire" value={HOUR_SLOTS.find((h) => h.id === form.scheduleHours)?.label ?? ''} />
@@ -398,8 +442,8 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 5: Payment */}
-        {step === 5 && (
+        {/* Step 6: Payment */}
+        {step === 6 && (
           <div className="space-y-4 text-center">
             <div className="text-4xl">💳</div>
             <h2 className="text-lg font-bold text-white sm:text-xl">Paiement sécurisé</h2>
@@ -487,7 +531,7 @@ export default function EnrollmentForm() {
         )}
 
         {/* Navigation */}
-        {step < 5 && (
+        {step < 6 && (
           <div className="mt-5 flex justify-between sm:mt-6">
             <button
               type="button"
@@ -507,7 +551,7 @@ export default function EnrollmentForm() {
             </button>
           </div>
         )}
-        {step === 5 && (
+        {step === 6 && (
           <button type="button" onClick={back} className="mt-4 text-sm text-slate-400 hover:text-white">
             ← Retour
           </button>

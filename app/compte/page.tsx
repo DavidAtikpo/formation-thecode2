@@ -30,9 +30,6 @@ export default function ComptePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Inscription impossible');
-      if (data.devLink) {
-        sessionStorage.setItem('thecode2_dev_verify_link', data.devLink);
-      }
       router.push('/compte/verifier-email');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur');

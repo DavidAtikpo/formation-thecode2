@@ -12,7 +12,6 @@ function buildVerificationHtml(verifyUrl: string) {
         </a>
       </p>
       <p style="font-size:13px;color:#64748b">Ce lien expire dans 24 heures. Si vous n'avez pas créé de compte, ignorez ce message.</p>
-      <p style="font-size:12px;color:#94a3b8;word-break:break-all">${verifyUrl}</p>
     </div>
   `;
 }
@@ -53,13 +52,53 @@ async function sendViaResend(to: string, subject: string, html: string): Promise
     body: JSON.stringify({ from, to: [to], subject, html }),
   });
 
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    console.error('[email/resend]', res.status, err);
+  return res.ok;
+}
+
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function getContactRecipient() {
+  return process.env.CONTACT_EMAIL?.trim() || process.env.SMTP_USER?.trim() || null;
+}
+
+export async function sendContactEmail(params: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): Promise<boolean> {
+  const to = getContactRecipient();
+  if (!to) return false;
+
+  const subject = `[Contact The Code²] ${params.subject} — ${params.name}`;
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;color:#1e293b">
+      <h2 style="color:#241bff">Nouveau message de contact</h2>
+      <p><strong>Nom :</strong> ${escapeHtml(params.name)}</p>
+      <p><strong>Email :</strong> ${escapeHtml(params.email)}</p>
+      <p><strong>Sujet :</strong> ${escapeHtml(params.subject)}</p>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0" />
+      <p style="white-space:pre-wrap">${escapeHtml(params.message)}</p>
+    </div>
+  `;
+
+  try {
+    if (isSmtpConfigured()) {
+      return await sendViaSmtp(to, subject, html);
+    }
+    if (process.env.RESEND_API_KEY?.trim()) {
+      return await sendViaResend(to, subject, html);
+    }
+    return false;
+  } catch {
     return false;
   }
-
-  return true;
 }
 
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
@@ -70,17 +109,11 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
     if (isSmtpConfigured()) {
       return await sendViaSmtp(to, subject, html);
     }
-
     if (process.env.RESEND_API_KEY?.trim()) {
       return await sendViaResend(to, subject, html);
     }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.info('[email] SMTP non configuré — lien de vérification:', verifyUrl);
-    }
     return false;
-  } catch (err: unknown) {
-    console.error('[email]', err);
+  } catch {
     return false;
   }
 }

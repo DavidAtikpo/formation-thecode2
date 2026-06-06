@@ -38,14 +38,15 @@ export const DOMAINS: {
   },
 ];
 
+// Tarifs TEST paiements — frais d'inscription 2 $ (à restaurer après validation)
 export const DURATIONS = [
   {
     id: 'two_weeks' as const,
     label: '2 semaines',
     subtitle: '6 heures par semaine',
     pricingMode: 'split' as const,
-    registrationFeeUsd: 12,
-    formationFeeUsd: 25,
+    registrationFeeUsd: 2,
+    formationFeeUsd: 0,
     description:
       'Parcours court et intensif pour découvrir le développement, valider votre motivation et poser des bases techniques solides avec un encadrement direct.',
     highlight: 'Découverte',
@@ -55,8 +56,8 @@ export const DURATIONS = [
     label: '3 mois',
     subtitle: '3 jours par semaine',
     pricingMode: 'split' as const,
-    registrationFeeUsd: 54,
-    formationFeeUsd: 213,
+    registrationFeeUsd: 2,
+    formationFeeUsd: 0,
     description:
       'Parcours complet pour monter en compétences sur la durée. Vous serez formé et encadré sur des projets concrets, avec des revues régulières pour gagner en autonomie et viser un profil de développeur confirmé.',
     highlight: 'Confirmé',
@@ -66,7 +67,7 @@ export const DURATIONS = [
     label: '4 mois',
     subtitle: '3 jours par semaine — formation personnelle',
     pricingMode: 'flat' as const,
-    totalUsd: 354.99,
+    totalUsd: 2,
     personal: true,
     description:
       'Accompagnement individualisé sur 4 mois avec un formateur dédié — formation en tête-à-tête, pas en groupe. Un mois supplémentaire pour viser un niveau senior : maîtrise technique, gestion de projet agile et portfolio de réalisations professionnelles.',
@@ -107,6 +108,27 @@ export const TECHNOLOGIES: { icon: IconName; title: string; description: string;
   },
 ];
 
+export const FORMATION_SESSIONS = [
+  {
+    id: 'july_2026' as const,
+    label: 'Session de juillet',
+    period: '1er – 15 juillet 2026',
+    shortLabel: '1 – 15 juil. 2026',
+  },
+  {
+    id: 'august_2026' as const,
+    label: 'Session d\'août',
+    period: '1er – 15 août 2026',
+    shortLabel: '1 – 15 août 2026',
+  },
+  {
+    id: 'late_august_2026' as const,
+    label: 'Session fin août',
+    period: '24 août – 7 septembre 2026',
+    shortLabel: '24 août – 7 sept. 2026',
+  },
+] as const;
+
 export const WEEK_DAYS = [
   { id: 'lundi', label: 'Lundi' },
   { id: 'mardi', label: 'Mardi' },
@@ -126,6 +148,7 @@ export const HOUR_SLOTS = [
 
 export type DomainId = (typeof DOMAINS)[number]['id'];
 export type DurationId = (typeof DURATIONS)[number]['id'];
+export type SessionId = (typeof FORMATION_SESSIONS)[number]['id'];
 
 export type Duration = (typeof DURATIONS)[number];
 
@@ -171,4 +194,8 @@ export function getDuration(id: DurationId) {
 
 export function getDomain(id: DomainId) {
   return DOMAINS.find((d) => d.id === id)!;
+}
+
+export function getFormationSession(id: SessionId) {
+  return FORMATION_SESSIONS.find((s) => s.id === id)!;
 }

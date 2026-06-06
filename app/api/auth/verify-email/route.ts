@@ -20,8 +20,7 @@ export async function GET(request: Request) {
     const res = NextResponse.redirect(`${base}/inscription?verified=1`);
     res.cookies.set(getCookieName(), sessionToken, sessionCookieOptions());
     return res;
-  } catch (err: unknown) {
-    console.error('[auth/verify-email]', err);
+  } catch {
     return NextResponse.redirect(`${base}/compte/verifier-email?error=server`);
   }
 }

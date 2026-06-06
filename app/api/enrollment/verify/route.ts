@@ -1,21 +1,28 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
-import { getSessionUserId } from '@/app/lib/auth';
+import { getVerifiedSessionUserId } from '@/app/lib/auth';
+import { apiForbidden, apiUnauthorized } from '@/app/lib/api-security';
+import { markEnrollmentPaidIfPending } from '@/app/lib/enrollment-security';
+import { getDuration } from '@/app/lib/formation-config';
 import { getStripe } from '@/app/lib/stripe';
 import { isCryptoOrderPaid } from '@/app/lib/crypto-payments';
 import { retrieveFedapayTransaction } from '@/app/lib/fedapay';
 
-async function markEnrollmentPaid(enrollmentId: string) {
-  return prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: { status: 'paid', paidAt: new Date() },
-  });
-}
+const PUBLIC_ENROLLMENT_SELECT = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  domain: true,
+  formationSession: true,
+  duration: true,
+  status: true,
+  paidAt: true,
+} as const;
 
 export async function GET(request: Request) {
-  const userId = await getSessionUserId();
+  const userId = await getVerifiedSessionUserId();
   if (!userId) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    return apiUnauthorized();
   }
 
   const { searchParams } = new URL(request.url);
@@ -25,11 +32,11 @@ export async function GET(request: Request) {
 
   if (provider === 'stripe') {
     if (!sessionId) {
-      return NextResponse.json({ error: 'session_id requis' }, { status: 400 });
+      return NextResponse.json({ error: 'Référence invalide' }, { status: 400 });
     }
 
     const enrollment = await prisma.enrollment.findFirst({
-      where: { stripeSessionId: sessionId, userId },
+      where: { stripeSessionId: sessionId, userId, paymentMethod: 'stripe' },
     });
 
     if (!enrollment) {
@@ -37,32 +44,63 @@ export async function GET(request: Request) {
     }
 
     if (enrollment.status === 'paid') {
-      return NextResponse.json({ status: 'paid', enrollment });
+      return NextResponse.json({
+        status: 'paid',
+        enrollment: await prisma.enrollment.findUnique({
+          where: { id: enrollment.id },
+          select: PUBLIC_ENROLLMENT_SELECT,
+        }),
+      });
     }
 
     const stripe = getStripe();
     if (stripe) {
       try {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
-        if (session.payment_status === 'paid') {
-          const updated = await markEnrollmentPaid(enrollment.id);
-          return NextResponse.json({ status: 'paid', enrollment: updated });
+        const metaUserId = session.metadata?.userId;
+        const metaEnrollmentId = session.metadata?.enrollmentId ?? session.client_reference_id;
+        const price = getDuration(enrollment.duration);
+        const amountOk = session.amount_total === price.stripeCents;
+
+        if (
+          session.payment_status === 'paid'
+          && session.metadata?.purpose === 'formation_enrollment'
+          && metaUserId === userId
+          && metaEnrollmentId === enrollment.id
+          && amountOk
+        ) {
+          const updated = await markEnrollmentPaidIfPending(enrollment.id);
+          if (updated) {
+            return NextResponse.json({
+              status: 'paid',
+              enrollment: await prisma.enrollment.findUnique({
+                where: { id: updated.id },
+                select: PUBLIC_ENROLLMENT_SELECT,
+              }),
+            });
+          }
         }
       } catch {
-        /* fallback to pending */
+        /* vérification provider échouée */
       }
     }
 
-    return NextResponse.json({ status: enrollment.status, enrollment });
+    return NextResponse.json({
+      status: enrollment.status,
+      enrollment: await prisma.enrollment.findUnique({
+        where: { id: enrollment.id },
+        select: PUBLIC_ENROLLMENT_SELECT,
+      }),
+    });
   }
 
   if (provider === 'fedapay') {
     if (!transactionId) {
-      return NextResponse.json({ error: 'transaction_id requis' }, { status: 400 });
+      return NextResponse.json({ error: 'Référence invalide' }, { status: 400 });
     }
 
     const enrollment = await prisma.enrollment.findFirst({
-      where: { fedapayTransactionId: transactionId, userId },
+      where: { fedapayTransactionId: transactionId, userId, paymentMethod: 'fedapay' },
     });
 
     if (!enrollment) {
@@ -70,26 +108,47 @@ export async function GET(request: Request) {
     }
 
     if (enrollment.status === 'paid') {
-      return NextResponse.json({ status: 'paid', enrollment });
+      return NextResponse.json({
+        status: 'paid',
+        enrollment: await prisma.enrollment.findUnique({
+          where: { id: enrollment.id },
+          select: PUBLIC_ENROLLMENT_SELECT,
+        }),
+      });
     }
 
     try {
       const transaction = await retrieveFedapayTransaction(transactionId);
-      if (transaction?.wasPaid()) {
-        const updated = await markEnrollmentPaid(enrollment.id);
-        return NextResponse.json({ status: 'paid', enrollment: updated });
+      const amountOk = Number(transaction?.amount) === enrollment.amountXof;
+      if (transaction?.wasPaid() && amountOk) {
+        const updated = await markEnrollmentPaidIfPending(enrollment.id);
+        if (updated) {
+          return NextResponse.json({
+            status: 'paid',
+            enrollment: await prisma.enrollment.findUnique({
+              where: { id: updated.id },
+              select: PUBLIC_ENROLLMENT_SELECT,
+            }),
+          });
+        }
       }
     } catch {
-      /* fallback to pending */
+      /* vérification provider échouée */
     }
 
-    return NextResponse.json({ status: enrollment.status, enrollment });
+    return NextResponse.json({
+      status: enrollment.status,
+      enrollment: await prisma.enrollment.findUnique({
+        where: { id: enrollment.id },
+        select: PUBLIC_ENROLLMENT_SELECT,
+      }),
+    });
   }
 
   if (provider === 'crypto') {
     const enrollmentId = searchParams.get('enrollment_id');
     if (!enrollmentId) {
-      return NextResponse.json({ error: 'enrollment_id requis' }, { status: 400 });
+      return NextResponse.json({ error: 'Référence invalide' }, { status: 400 });
     }
 
     const enrollment = await prisma.enrollment.findFirst({
@@ -101,20 +160,40 @@ export async function GET(request: Request) {
     }
 
     if (enrollment.status === 'paid') {
-      return NextResponse.json({ status: 'paid', enrollment });
+      return NextResponse.json({
+        status: 'paid',
+        enrollment: await prisma.enrollment.findUnique({
+          where: { id: enrollment.id },
+          select: PUBLIC_ENROLLMENT_SELECT,
+        }),
+      });
     }
 
     try {
       if (await isCryptoOrderPaid(enrollment.id)) {
-        const updated = await markEnrollmentPaid(enrollment.id);
-        return NextResponse.json({ status: 'paid', enrollment: updated });
+        const updated = await markEnrollmentPaidIfPending(enrollment.id);
+        if (updated) {
+          return NextResponse.json({
+            status: 'paid',
+            enrollment: await prisma.enrollment.findUnique({
+              where: { id: updated.id },
+              select: PUBLIC_ENROLLMENT_SELECT,
+            }),
+          });
+        }
       }
     } catch {
-      /* fallback to pending */
+      /* vérification provider échouée */
     }
 
-    return NextResponse.json({ status: enrollment.status, enrollment });
+    return NextResponse.json({
+      status: enrollment.status,
+      enrollment: await prisma.enrollment.findUnique({
+        where: { id: enrollment.id },
+        select: PUBLIC_ENROLLMENT_SELECT,
+      }),
+    });
   }
 
-  return NextResponse.json({ error: 'provider invalide' }, { status: 400 });
+  return apiForbidden();
 }

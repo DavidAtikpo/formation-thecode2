@@ -12,7 +12,6 @@ function VerifyEmailContent() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [devLink, setDevLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const urlError = searchParams.get('error');
@@ -33,11 +32,6 @@ function VerifyEmailContent() {
   }, [router]);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('thecode2_dev_verify_link');
-    if (stored) {
-      setDevLink(stored);
-      sessionStorage.removeItem('thecode2_dev_verify_link');
-    }
     checkStatus().finally(() => setLoading(false));
   }, [checkStatus]);
 
@@ -62,7 +56,6 @@ function VerifyEmailContent() {
     setBusy(true);
     setError(null);
     setMessage(null);
-    setDevLink(null);
     try {
       const res = await fetch('/api/auth/resend-verification', {
         method: 'POST',
@@ -71,7 +64,6 @@ function VerifyEmailContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Envoi impossible');
       setMessage(data.message);
-      if (data.devLink) setDevLink(data.devLink);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur');
     } finally {
@@ -104,15 +96,6 @@ function VerifyEmailContent() {
       {message && (
         <div className="mb-3 rounded-lg border border-brand-400/30 bg-brand-400/10 px-3 py-2 text-xs text-brand-200 sm:text-sm">
           {message}
-        </div>
-      )}
-
-      {devLink && (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 sm:text-sm">
-          <p className="mb-1 font-medium">Mode développement — lien de vérification :</p>
-          <a href={devLink} className="break-all underline hover:text-amber-100">
-            {devLink}
-          </a>
         </div>
       )}
 

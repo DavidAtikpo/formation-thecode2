@@ -5,6 +5,7 @@ import SectionIcon, { type IconName } from './components/SectionIcon';
 import {
   DURATIONS,
   DOMAINS,
+  FORMATION_SESSIONS,
   HOUR_SLOTS,
   TECHNOLOGIES,
   WEEK_DAYS,
@@ -15,10 +16,10 @@ import {
 } from './lib/formation-config';
 
 const FEATURES: { icon: IconName; title: string; desc: string }[] = [
-  { icon: 'laptop', title: '100% en ligne', desc: 'Formez-vous depuis chez vous, à votre rythme' },
+  { icon: 'wrench', title: '100 % pratique', desc: 'Vous codez, construisez et déployez — pas de longs discours ni de cours théoriques à l\'infini' },
+  { icon: 'laptop', title: '100 % en ligne', desc: 'Formez-vous depuis chez vous, à votre rythme' },
   { icon: 'award', title: 'Certificat', desc: 'Certificat de fin de formation à la clôture' },
   { icon: 'users', title: 'Encadrement', desc: 'Suivi personnalisé tout au long du parcours' },
-  { icon: 'wrench', title: 'Projets concrets', desc: 'Apprentissage par la pratique sur des cas réels' },
 ];
 
 const PREP_SESSIONS: { icon: IconName; title: string; tag: string; intro: string; points: string[] }[] = [
@@ -105,20 +106,22 @@ const SYSTEM_REQUIREMENTS: { icon: IconName; title: string; specs: { label: stri
 ];
 
 const HERO_BADGES: { icon: IconName; label: string }[] = [
-  { icon: 'calendar', label: 'Dès 2 semaines' },
+  { icon: 'wrench', label: '100 % pratique' },
+  { icon: 'calendar', label: '3 sessions en 2026' },
   { icon: 'clock', label: '6 h / semaine' },
-  { icon: 'laptop', label: '100% en ligne' },
-  { icon: 'lightbulb', label: '2 séances de préparation' },
+  { icon: 'laptop', label: '100 % en ligne' },
+  { icon: 'lightbulb', label: '2 rencontres avant la formation' },
   { icon: 'graduation', label: 'Certificat inclus' },
 ];
 
 const STEPS = [
   { num: '1', title: 'Créez votre compte', desc: 'Inscrivez-vous en quelques minutes' },
   { num: '2', title: 'Vérifiez votre email', desc: 'Confirmez votre adresse via le lien reçu' },
-  { num: '3', title: 'Choisissez votre parcours', desc: 'Domaine, durée et créneaux horaires' },
-  { num: '4', title: 'Payez en ligne', desc: 'FedaPay, Stripe ou crypto (BTC, USDT…)' },
-  { num: '5', title: '2 séances de préparation', desc: 'Design Thinking, Scrum et installation des outils' },
-  { num: '6', title: 'Commencez la formation', desc: 'Démarrage du parcours technique choisi' },
+  { num: '3', title: 'Choisissez votre session', desc: 'Juillet, août ou fin août 2026 — selon votre disponibilité' },
+  { num: '4', title: 'Configurez votre parcours', desc: 'Domaine, durée et créneaux horaires' },
+  { num: '5', title: 'Payez en ligne', desc: 'FedaPay, Stripe ou crypto (BTC, USDT…)' },
+  { num: '6', title: '2 rencontres de préparation', desc: 'Design Thinking, Scrum et installation des outils — avant le début de votre session' },
+  { num: '7', title: 'Commencez la formation', desc: 'Démarrage du parcours technique à la date de votre session' },
 ];
 
 const PAYMENT_METHODS: { icon: IconName; name: string; desc: string; tag: string }[] = [
@@ -150,8 +153,9 @@ export default function HomePage() {
               <span className="mt-0.5 block text-white">The Code²</span>
             </h1>
             <p className="mx-auto mb-4 max-w-xl text-sm leading-relaxed text-slate-300 sm:mb-5 sm:text-base">
-              Apprenez, créez, maîtrisez et propulsez votre carrière dans le développement web,
-              le mobile et le digital.
+              Apprenez en <strong className="font-medium text-white">pratiquant</strong>, pas en
+              lisant des tonnes de cours théoriques. The Code² vous met les mains dans le code
+              dès le départ pour propulser votre carrière dans le web, le mobile et le digital.
             </p>
 
             <MotionStagger className="mb-5 flex flex-wrap justify-center gap-1.5 sm:mb-6 sm:gap-2">
@@ -186,6 +190,12 @@ export default function HomePage() {
         {/* Pourquoi */}
         <MotionSection>
           <SectionTitle>Pourquoi The Code² ?</SectionTitle>
+          <p className="mb-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
+            Chez The Code², la formation repose sur la{' '}
+            <strong className="font-medium text-slate-200">pratique</strong>, pas sur la lecture
+            passive, les longs discours ou des heures de théorie sans application. Vous
+            apprenez en construisant de vrais projets, guidé par un formateur.
+          </p>
           <MotionStagger className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
             {FEATURES.map((f) => (
               <MotionItem
@@ -202,14 +212,45 @@ export default function HomePage() {
           </MotionStagger>
         </MotionSection>
 
+        {/* Sessions de formation */}
+        <MotionSection>
+          <SectionTitle>Sessions de formation 2026</SectionTitle>
+          <p className="mb-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
+            Trois sessions sont ouvertes à l&apos;inscription. Lors de votre inscription, vous
+            choisissez celle qui correspond à votre calendrier.{' '}
+            <strong className="font-medium text-slate-200">
+              Deux rencontres de préparation auront lieu avant la date de début
+            </strong>{' '}
+            de chaque session (Design Thinking et Scrum) — voir la section ci-dessous.
+          </p>
+          <MotionStagger className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            {FORMATION_SESSIONS.map((session) => (
+              <MotionItem
+                key={session.id}
+                className="rounded-lg border border-brand-400/25 bg-brand-400/5 p-3 sm:rounded-xl sm:p-4"
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <SectionIcon name="calendar" size="sm" className="bg-brand-400/10 text-brand-300" />
+                  <h3 className="text-sm font-semibold text-white sm:text-base">{session.label}</h3>
+                </div>
+                <p className="text-sm font-medium text-brand-300 sm:text-base">{session.period}</p>
+                <p className="mt-2 text-[11px] leading-relaxed text-slate-400 sm:text-xs">
+                  2 rencontres de préparation programmées avant cette date.
+                </p>
+              </MotionItem>
+            ))}
+          </MotionStagger>
+        </MotionSection>
+
         {/* Préparation avant la formation */}
         <MotionSection>
           <SectionTitle>Avant de commencer la formation</SectionTitle>
           <p className="mb-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
-            Chaque parcours débute par <strong className="font-medium text-slate-200">deux séances de préparation</strong>{' '}
+            Avant le début de votre session, vous participerez à{' '}
+            <strong className="font-medium text-slate-200">deux rencontres de préparation</strong>{' '}
             obligatoires. Elles posent les bases méthodologiques et techniques pour aborder sereinement
             la formation technique. Vous saurez comment réfléchir un projet, travailler en équipe
-            et utiliser les bons outils dès le premier jour.
+            et utiliser les bons outils dès le premier jour de cours.
           </p>
 
           <MotionStagger className="mb-4 grid grid-cols-1 gap-3 sm:mb-5 sm:gap-4">

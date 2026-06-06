@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MotionCard } from '@/app/components/Motion';
 
-export default function ConnexionPage() {
+function ConnexionContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,10 @@ export default function ConnexionPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Connexion impossible');
+      if (data.isAdmin) {
+        router.push('/admin');
+        return;
+      }
       router.push(data.emailVerified ? '/inscription' : '/compte/verifier-email');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur');
@@ -83,5 +89,13 @@ export default function ConnexionPage() {
         </p>
       </MotionCard>
     </div>
+  );
+}
+
+export default function ConnexionPage() {
+  return (
+    <Suspense fallback={<p className="py-20 text-center text-slate-400">Chargement…</p>}>
+      <ConnexionContent />
+    </Suspense>
   );
 }
