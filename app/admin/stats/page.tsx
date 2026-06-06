@@ -40,6 +40,20 @@ type DashboardStats = {
   bySession: SessionItem[];
   byPaymentMethod: PaymentItem[];
   enrollmentsByDay: DayItem[];
+  pageVisits: {
+    overview: { totalVisits: number; visitsLast30Days: number };
+    byPage: { path: string; label: string; count: number }[];
+    byCountry: { country: string; label: string; count: number }[];
+    byLocation: {
+      country: string | null;
+      city: string | null;
+      region: string | null;
+      location: string;
+      count: number;
+    }[];
+    visitsByDay: DayItem[];
+    maxPathCount: number;
+  };
   generatedAt: string;
 };
 
@@ -67,6 +81,7 @@ export default function AdminStatsPage() {
   }, [load]);
 
   const maxDayCount = Math.max(1, ...(stats?.enrollmentsByDay.map((d) => d.count) ?? [1]));
+  const maxVisitDayCount = Math.max(1, ...(stats?.pageVisits.visitsByDay.map((d) => d.count) ?? [1]));
 
   return (
     <div className="mx-auto w-full max-w-6xl px-3 py-8 sm:px-5 sm:py-10">
@@ -77,7 +92,7 @@ export default function AdminStatsPage() {
           </p>
           <h1 className="text-xl font-bold text-white sm:text-2xl">Statistiques</h1>
           <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-            Vue d&apos;ensemble des inscriptions, paiements et activité.
+            Vue d&apos;ensemble des inscriptions, paiements, visites publiques et activité.
           </p>
           {stats && (
             <p className="mt-1 text-[10px] text-slate-600">
@@ -113,6 +128,125 @@ export default function AdminStatsPage() {
             <KpiCard label="Complets" value={stats.overview.paidComplete} sub={`${stats.overview.paidLast30Days} / 30 j`} />
             <KpiCard label="En attente" value={stats.overview.pendingRegistration} sub="inscription" />
             <KpiCard label="Formation due" value={stats.overview.awaitingFormation} sub="frais formation" />
+          </section>
+
+          <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+            <h2 className="mb-1 text-sm font-semibold text-white">Visites — pages publiques</h2>
+            <p className="mb-4 text-[11px] text-slate-500">
+              Accueil, À propos, Contact, Confidentialité, Compte, Connexion — localisation via IP
+              (anonyme).
+            </p>
+            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+              <KpiCard
+                label="Visites totales"
+                value={stats.pageVisits.overview.totalVisits}
+                sub="pages publiques"
+              />
+              <KpiCard
+                label="30 derniers jours"
+                value={stats.pageVisits.overview.visitsLast30Days}
+                sub="visites"
+              />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Par page
+                </h3>
+                <div className="space-y-3">
+                  {stats.pageVisits.byPage.map((item) => (
+                    <div key={item.path}>
+                      <div className="mb-1 flex justify-between gap-2 text-xs">
+                        <span className="text-slate-300">
+                          {item.label}{' '}
+                          <span className="text-slate-600">({item.path})</span>
+                        </span>
+                        <span className="shrink-0 text-slate-400">{item.count}</span>
+                      </div>
+                      <Bar
+                        value={item.count}
+                        max={stats.pageVisits.maxPathCount}
+                        color="bg-violet-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Par pays
+                </h3>
+                {stats.pageVisits.byCountry.length === 0 ? (
+                  <p className="text-xs text-slate-500">Aucune localisation enregistrée pour l&apos;instant.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {stats.pageVisits.byCountry.map((item) => (
+                      <div
+                        key={item.country}
+                        className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs"
+                      >
+                        <span className="text-slate-300">{item.label}</span>
+                        <span className="font-medium text-slate-200">{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Emplacements (ville / région / pays)
+              </h3>
+              {stats.pageVisits.byLocation.length === 0 ? (
+                <p className="text-xs text-slate-500">
+                  Les emplacements apparaîtront après les premières visites (hébergement ou CDN avec
+                  en-têtes géo).
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[420px] text-left text-xs">
+                    <thead className="text-slate-500">
+                      <tr>
+                        <th className="pb-2 font-medium">Emplacement</th>
+                        <th className="pb-2 font-medium text-right">Visites</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.pageVisits.byLocation.map((item, index) => (
+                        <tr key={`${item.location}-${index}`} className="border-t border-white/5">
+                          <td className="py-2 text-slate-300">{item.location}</td>
+                          <td className="py-2 text-right text-slate-200">{item.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Visites — 14 derniers jours
+              </h3>
+              <div className="flex items-end gap-1 sm:gap-2" style={{ minHeight: 100 }}>
+                {stats.pageVisits.visitsByDay.map((day) => (
+                  <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
+                    <span className="text-[10px] font-medium text-slate-400">{day.count || ''}</span>
+                    <div
+                      className="w-full rounded-t bg-violet-500/80 transition-all"
+                      style={{
+                        height: `${Math.max(4, (day.count / maxVisitDayCount) * 80)}px`,
+                        opacity: day.count > 0 ? 1 : 0.2,
+                      }}
+                    />
+                    <span className="hidden text-[9px] text-slate-600 sm:block">{day.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
 
           <section className="grid gap-4 lg:grid-cols-3">

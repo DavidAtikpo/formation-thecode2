@@ -1,4 +1,5 @@
 import { DOMAINS, DURATIONS, FORMATION_SESSIONS } from '@/app/lib/formation-config';
+import { getPageVisitStats } from '@/app/lib/page-analytics';
 import { prisma } from '@/app/lib/prisma';
 
 function lastNDays(n: number) {
@@ -107,6 +108,8 @@ export async function getAdminDashboardStats() {
     count: recentEnrollments.filter((e) => e.createdAt.toISOString().startsWith(day.date)).length,
   }));
 
+  const pageVisits = await getPageVisitStats();
+
   return {
     overview: {
       totalUsers,
@@ -175,6 +178,7 @@ export async function getAdminDashboardStats() {
       amountUsd: r._sum.amountUsd ?? 0,
     })),
     enrollmentsByDay,
+    pageVisits,
     generatedAt: new Date().toISOString(),
   };
 }

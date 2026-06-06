@@ -238,3 +238,20 @@ enum SkillLevel {
 
   @@schema("formation")
 }
+
+model PageVisit {
+  id        String   @id @default(cuid())
+  path      String
+  country   String?
+  city      String?
+  region    String?
+  ipHash    String?
+  referrer  String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([country])
+  @@index([createdAt])
+  @@schema("formation")
+}

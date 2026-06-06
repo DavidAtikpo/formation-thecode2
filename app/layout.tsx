@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Geist } from 'next/font/google';
 import './globals.css';
 import Header from './components/Header';
+import PageViewTracker from './components/PageViewTracker';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" suppressHydrationWarning className={`${geistSans.variable} h-full antialiased`}>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#0a0b1e] text-white">
+        <PageViewTracker />
         <Header />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-white/10 py-4 text-center text-xs text-slate-500 sm:py-5 sm:text-sm">
