@@ -1,7 +1,24 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { hasAnalyticsConsentFromRequest } from '@/app/lib/cookie-consent';
+import { isPublicPagePath, normalizePagePath } from '@/app/lib/page-analytics-public';
+import { recordPageVisit } from '@/app/lib/page-analytics';
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const path = normalizePagePath(request.nextUrl.pathname);
+
+  if (
+    request.method === 'GET' &&
+    isPublicPagePath(path) &&
+    hasAnalyticsConsentFromRequest(request)
+  ) {
+    void recordPageVisit({
+      path,
+      headers: request.headers,
+      referrer: request.headers.get('referer'),
+    }).catch(() => {});
+  }
+
   const response = NextResponse.next();
 
   response.headers.set('X-Frame-Options', 'DENY');

@@ -4,6 +4,7 @@ import {
   PUBLIC_PAGE_PATHS,
   getPublicPageLabel,
   isPublicPagePath,
+  normalizePagePath,
   type PublicPagePath,
 } from '@/app/lib/page-analytics-public';
 import { prisma } from '@/app/lib/prisma';
@@ -13,11 +14,13 @@ export {
   PUBLIC_PAGE_PATHS,
   getPublicPageLabel,
   isPublicPagePath,
+  normalizePagePath,
   type PublicPagePath,
 };
 
+/** Crawlers only — not in-app browsers (WhatsApp, Facebook, Instagram, etc.) */
 const BOT_PATTERN =
-  /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|headless|lighthouse/i;
+  /googlebot|bingbot|yandex|baiduspider|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|applebot|petalbot|semrush|ahrefsbot|mj12bot|dotbot|rogerbot|headlesschrome|lighthouse|pagespeed|gptbot|claudebot|bytespider/i;
 
 const DEDUP_MINUTES = 10;
 
@@ -60,7 +63,8 @@ export async function recordPageVisit(params: {
   headers: Headers;
   referrer?: string | null;
 }) {
-  if (!isPublicPagePath(params.path)) return false;
+  const path = normalizePagePath(params.path);
+  if (!isPublicPagePath(path)) return false;
   if (isBot(params.headers.get('user-agent'))) return false;
 
   const ip = getClientIp(params.headers);
@@ -71,7 +75,7 @@ export async function recordPageVisit(params: {
     const since = new Date(Date.now() - DEDUP_MINUTES * 60 * 1000);
     const recent = await prisma.pageVisit.findFirst({
       where: {
-        path: params.path,
+        path,
         ipHash,
         createdAt: { gte: since },
       },
@@ -82,7 +86,7 @@ export async function recordPageVisit(params: {
 
   await prisma.pageVisit.create({
     data: {
-      path: params.path,
+      path,
       country: geo.country,
       city: geo.city,
       region: geo.region,

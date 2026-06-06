@@ -106,6 +106,7 @@ export default function ConfidentialitePage() {
         </Section>
 
         <Section title="5. Cookies et session">
+          <p className="mb-2 text-slate-300">Cookies nécessaires</p>
           <p>
             The Code² utilise un cookie de session technique (<code className="text-brand-300">thecode2_token</code>)
             pour vous maintenir connecté après la création de compte ou la connexion.
@@ -113,10 +114,23 @@ export default function ConfidentialitePage() {
           <ul className="mt-2 list-inside list-disc space-y-1 text-slate-400">
             <li>Durée : 7 jours</li>
             <li>Propriétés : httpOnly, secure en production, sameSite=lax</li>
-            <li>Finalité : authentification uniquement — pas de cookie publicitaire ou de tracking</li>
+            <li>Finalité : authentification — indispensable au fonctionnement de votre espace</li>
+          </ul>
+          <p className="mt-4 mb-2 text-slate-300">Cookies optionnels (avec votre consentement)</p>
+          <p>
+            Si vous acceptez via la bannière cookies, nous enregistrons des statistiques anonymes
+            de visite des pages publiques (pages consultées, pays/ville approximatifs déduits de
+            l&apos;adresse IP). Cookie utilisé :{' '}
+            <code className="text-brand-300">tc2_analytics_consent</code> (durée : 1 an).
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-slate-400">
+            <li>Aucun cookie publicitaire ni profilage</li>
+            <li>Vous pouvez refuser les statistiques sans impact sur la navigation</li>
+            <li>Choix mémorisé dans votre navigateur (localStorage + cookie)</li>
           </ul>
           <p className="mt-2 text-slate-400">
-            Vous pouvez supprimer ce cookie en vous déconnectant ou en effaçant les cookies de votre navigateur.
+            Vous pouvez supprimer les cookies en effaçant les données du site dans votre navigateur
+            ou en vous déconnectant pour le cookie de session.
           </p>
         </Section>
 
