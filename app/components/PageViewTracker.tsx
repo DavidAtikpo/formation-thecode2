@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { isPublicPagePath } from '@/app/lib/page-analytics';
+import { isPublicPagePath } from '@/app/lib/page-analytics-public';
 
 export default function PageViewTracker() {
   const pathname = usePathname();

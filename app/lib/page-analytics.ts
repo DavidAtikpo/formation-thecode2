@@ -1,38 +1,25 @@
 import { createHash } from 'crypto';
+import {
+  PUBLIC_PAGE_LABELS,
+  PUBLIC_PAGE_PATHS,
+  getPublicPageLabel,
+  isPublicPagePath,
+  type PublicPagePath,
+} from '@/app/lib/page-analytics-public';
 import { prisma } from '@/app/lib/prisma';
 
-export const PUBLIC_PAGE_PATHS = [
-  '/',
-  '/apropos',
-  '/contact',
-  '/confidentialite',
-  '/compte',
-  '/connexion',
-] as const;
-
-export type PublicPagePath = (typeof PUBLIC_PAGE_PATHS)[number];
-
-export const PUBLIC_PAGE_LABELS: Record<PublicPagePath, string> = {
-  '/': 'Accueil',
-  '/apropos': 'À propos',
-  '/contact': 'Contact',
-  '/confidentialite': 'Confidentialité',
-  '/compte': 'Créer un compte',
-  '/connexion': 'Connexion',
+export {
+  PUBLIC_PAGE_LABELS,
+  PUBLIC_PAGE_PATHS,
+  getPublicPageLabel,
+  isPublicPagePath,
+  type PublicPagePath,
 };
 
 const BOT_PATTERN =
   /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|headless|lighthouse/i;
 
 const DEDUP_MINUTES = 10;
-
-export function isPublicPagePath(path: string): path is PublicPagePath {
-  return (PUBLIC_PAGE_PATHS as readonly string[]).includes(path);
-}
-
-export function getPublicPageLabel(path: string) {
-  return isPublicPagePath(path) ? PUBLIC_PAGE_LABELS[path] : path;
-}
 
 function hashIp(ip: string) {
   const salt = process.env.SESSION_SECRET?.trim() || 'thecode2-analytics';
