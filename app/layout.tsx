@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Script from 'next/script';
 import { Geist } from 'next/font/google';
 import './globals.css';
 import Header from './components/Header';
@@ -53,6 +54,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </a>
           </div>
         </footer>
+        <Script id="chatagent-boot" strategy="beforeInteractive">
+          {`window.ChatAgentBoot = { key: "wk_8551ab6ac96e4be98bc87303", api: "https://chatagentapi.onrender.com/api/v1" };`}
+        </Script>
+        <Script
+          src="https://chatagentcides.qrthecode2.com/widget.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
