@@ -55,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </footer>
         <Script id="chatagent-boot" strategy="beforeInteractive">
-          {`window.ChatAgentBoot = { key: "wk_8551ab6ac96e4be98bc87303", api: "https://chatagentapi.onrender.com/api/v1" };`}
+          {`window.ChatAgentBoot = { key: "wk_05108b58391a42f7813b314e", api: "https://chatagentapi.onrender.com/api/v1" };`}
         </Script>
         <Script
           src="https://chatagentcides.qrthecode2.com/widget.js"
