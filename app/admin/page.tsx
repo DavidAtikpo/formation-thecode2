@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import LoadingState from '@/app/components/LoadingState';
+import { DEFAULT_PROJECT_GRADE_TITLE } from '@/app/lib/project-submission';
 import {
   DOMAINS,
   DURATIONS,
@@ -73,6 +74,9 @@ type EnrollmentRow = {
   yearsExperience: number | null;
   masteredTechnologies: string[];
   skillProfileCompletedAt: string | null;
+  projectSiteUrl: string | null;
+  projectSiteTitle: string | null;
+  projectSiteSubmittedAt: string | null;
   skillProfile: {
     completed: boolean;
     skillLevel: 'beginner' | 'experienced' | null;
@@ -443,6 +447,12 @@ export default function AdminPage() {
             Cours
           </Link>
           <Link
+            href="/admin/ecosystem"
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300 hover:bg-white/5 sm:text-sm"
+          >
+            Écosystème
+          </Link>
+          <Link
             href="/"
             className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300 hover:bg-white/5 sm:text-sm"
           >
@@ -536,6 +546,7 @@ export default function AdminPage() {
                       <th className="px-3 py-2.5 font-medium">Candidat</th>
                       <th className="px-3 py-2.5 font-medium">Parcours</th>
                       <th className="px-3 py-2.5 font-medium">Profil technique</th>
+                      <th className="px-3 py-2.5 font-medium">Projet</th>
                       <th className="px-3 py-2.5 font-medium">Statut</th>
                       <th className="px-3 py-2.5 font-medium">Paiement</th>
                       <th className="px-3 py-2.5 font-medium">Date</th>
@@ -584,6 +595,13 @@ export default function AdminPage() {
                                 {row.skillProfile.masteredTechnologies.join(', ')}
                               </p>
                             )}
+                        </td>
+                        <td className="px-3 py-3">
+                          {row.projectSiteUrl ? (
+                            <span className="font-medium text-green-300">Soumis</span>
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-3">
                           <StatusBadge status={row.status} />
@@ -885,6 +903,40 @@ export default function AdminPage() {
                   </ul>
                 </DetailSection>
               )}
+
+              <DetailSection title="Projet hébergé">
+                {selected.projectSiteUrl ? (
+                  <div className="space-y-2 text-xs sm:text-sm">
+                    {selected.projectSiteTitle && (
+                      <p className="font-medium text-white">{selected.projectSiteTitle}</p>
+                    )}
+                    <a
+                      href={selected.projectSiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="break-all text-brand-400 hover:underline"
+                    >
+                      {selected.projectSiteUrl}
+                    </a>
+                    {selected.projectSiteSubmittedAt && (
+                      <p className="text-[11px] text-slate-500">
+                        Soumis le {formatDate(selected.projectSiteSubmittedAt)}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setGradeTitle(DEFAULT_PROJECT_GRADE_TITLE)}
+                      className="mt-1 rounded-lg border border-brand-400/40 bg-brand-400/10 px-3 py-1.5 text-[11px] font-medium text-brand-300 hover:bg-brand-400/20"
+                    >
+                      Préparer la notation du projet
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 sm:text-sm">
+                    L&apos;étudiant n&apos;a pas encore soumis le lien de son projet hébergé.
+                  </p>
+                )}
+              </DetailSection>
 
               {selected.grades && selected.grades.length > 0 && (
                 <DetailSection title="Notes">

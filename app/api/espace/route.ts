@@ -14,6 +14,7 @@ import {
 } from '@/app/lib/formation-config';
 import { HOUR_SLOTS, WEEK_DAYS } from '@/app/lib/formation-config';
 import { PHASE_LABELS } from '@/app/lib/payment-receipt';
+import { serializeProjectSubmission } from '@/app/lib/project-submission';
 
 export async function GET() {
   const userId = await getVerifiedSessionUserId();
@@ -24,7 +25,7 @@ export async function GET() {
   const enrollment = await prisma.enrollment.findFirst({
     where: {
       userId,
-      status: { in: ['active', 'paid'] },
+      status: { in: ['pending_payment', 'active', 'paid'] },
     },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -101,6 +102,7 @@ export async function GET() {
       id: enrollment.id,
       firstName: enrollment.firstName,
       lastName: enrollment.lastName,
+      country: enrollment.country,
       email: (
         await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
       )?.email,
@@ -146,6 +148,7 @@ export async function GET() {
         masteredTechnologies: enrollment.masteredTechnologies,
         completedAt: enrollment.skillProfileCompletedAt?.toISOString() ?? null,
       },
+      project: serializeProjectSubmission(enrollment),
     },
   });
 }

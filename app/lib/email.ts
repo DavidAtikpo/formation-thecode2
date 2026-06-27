@@ -145,7 +145,7 @@ export async function sendPaymentReceiptEmail(params: {
       </p>
       <p style="font-size:13px;color:#64748b">
         Vous pouvez aussi retrouver vos reçus à tout moment dans votre
-        <a href="${params.downloadUrl.replace(/\/api\/espace\/receipts\/[^/]+$/, '/espace')}" style="color:#241bff">espace candidat</a>.
+        <a href="${params.downloadUrl.replace(/\/api\/espace\/receipts\/[^/]+$/, '/espace/paiements')}" style="color:#241bff">espace candidat</a>.
       </p>
       <p style="font-size:12px;color:#94a3b8;margin-top:24px">Merci de votre confiance — The Code²</p>
     </div>

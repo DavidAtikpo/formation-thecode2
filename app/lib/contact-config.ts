@@ -10,6 +10,8 @@ export const CONTACT = {
 
 export const CONTACT_SUBJECTS = [
   { id: 'inscription', label: 'Inscription à la formation' },
+  { id: 'studio', label: 'Studio — Développement sur mesure' },
+  { id: 'entreprises', label: 'Entreprises — Recrutement' },
   { id: 'tarifs', label: 'Tarifs et sessions' },
   { id: 'technique', label: 'Configuration matérielle' },
   { id: 'paiement', label: 'Paiement' },

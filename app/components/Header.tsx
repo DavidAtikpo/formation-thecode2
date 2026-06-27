@@ -46,9 +46,22 @@ export default function Header() {
         <nav className="flex shrink-0 flex-wrap items-center justify-end gap-1 sm:gap-2.5">
           <Link
             href="/apropos"
-            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
+            className="hidden px-0.5 text-[11px] text-slate-300 hover:text-white sm:inline sm:px-1 sm:text-sm"
           >
             À propos
+          </Link>
+          <Link
+            href="/studio"
+            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
+          >
+            Studio
+          </Link>
+          <Link
+            href="/entreprises"
+            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
+          >
+            <span className="sm:hidden">Recruter</span>
+            <span className="hidden sm:inline">Entreprises</span>
           </Link>
           <Link
             href="/contact"
@@ -66,7 +79,7 @@ export default function Header() {
                   Admin
                 </Link>
               )}
-              <Link href="/espace" className={btnClass}>
+              <Link href="/espace/parcours" className={btnClass}>
                 <span className="hidden sm:inline">Mon espace</span>
                 <span className="sm:hidden">Espace</span>
               </Link>

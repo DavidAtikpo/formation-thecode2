@@ -199,9 +199,8 @@ export default function AproposPage() {
           <MotionSection>
             <SectionTitle>Sessions de formation 2026</SectionTitle>
             <p className="mb-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
-              Trois sessions sont programmées. Lors de votre inscription, vous choisissez celle qui
-              correspond à votre calendrier. Deux rencontres de préparation auront lieu avant chaque
-              date de début.
+              D&apos;abord la durée (2 semaines, 3 mois ou 4 mois), puis le mois de départ : 5 juillet,
+              3 août ou 1er septembre 2026.
             </p>
             <MotionStagger className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
               {FORMATION_SESSIONS.map((session) => (
@@ -211,9 +210,10 @@ export default function AproposPage() {
                 >
                   <div className="mb-2 flex items-center gap-2">
                     <SectionIcon name="calendar" size="sm" className="bg-violet-400/10 text-violet-300" />
-                    <h3 className="text-sm font-semibold text-white">{session.label}</h3>
+                    <h3 className="text-sm font-semibold text-white">{session.tabLabel}</h3>
                   </div>
                   <p className="text-sm font-medium text-brand-300">{session.period}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">2 sem. · 3 mois · 4 mois</p>
                 </MotionItem>
               ))}
             </MotionStagger>

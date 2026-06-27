@@ -22,7 +22,35 @@ export async function POST(request: Request) {
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return apiError('Impossible de créer le compte', 400);
+      if (existing.emailVerified) {
+        return apiError(
+          'Un compte existe déjà avec cet email. Connectez-vous ou utilisez un autre email.',
+          409,
+        );
+      }
+
+      const passwordHash = await hashPassword(password);
+      const user = await prisma.user.update({
+        where: { id: existing.id },
+        data: { passwordHash },
+      });
+
+      await syncAdminRole(user.id, email);
+      const { sent } = await createAndSendEmailVerification(user.id, email, request);
+
+      const token = await createSessionToken(user.id);
+      const res = NextResponse.json(
+        {
+          id: user.id,
+          email: user.email,
+          emailVerified: false,
+          verificationEmailSent: sent,
+          resumed: true,
+        },
+        { status: 201 },
+      );
+      res.cookies.set(getCookieName(), token, sessionCookieOptions());
+      return res;
     }
 
     const passwordHash = await hashPassword(password);

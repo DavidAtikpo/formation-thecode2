@@ -43,10 +43,7 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
       ? `Frais d'inscription — ${params.durationLabel}`
       : `Frais de formation — ${params.durationLabel}`;
 
-  const successBase =
-    params.phase === 'registration'
-      ? `${base}/inscription/succes`
-      : `${base}/espace/succes`;
+  const successBase = `${base}/espace/succes`;
 
   if (params.paymentMethod === 'stripe') {
     const stripe = getStripe();
@@ -72,7 +69,10 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
         params.phase === 'registration'
           ? `${successBase}?provider=stripe&phase=registration&session_id={CHECKOUT_SESSION_ID}`
           : `${successBase}?provider=stripe&phase=formation&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: params.phase === 'registration' ? `${base}/inscription?cancelled=1` : `${base}/espace?cancelled=1`,
+      cancel_url:
+        params.phase === 'registration'
+          ? `${base}/espace/paiements?cancelled=1`
+          : `${base}/espace/paiements?cancelled=1`,
       metadata: {
         enrollmentId: params.enrollmentId,
         userId: params.userId,
@@ -149,7 +149,10 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
       params.phase === 'registration'
         ? `${successBase}?provider=crypto&phase=registration&enrollment_id=${params.enrollmentId}`
         : `${successBase}?provider=crypto&phase=formation&enrollment_id=${params.enrollmentId}`,
-    cancelUrl: params.phase === 'registration' ? `${base}/inscription?cancelled=1` : `${base}/espace?cancelled=1`,
+    cancelUrl:
+      params.phase === 'registration'
+        ? `${base}/espace/paiements?cancelled=1`
+        : `${base}/espace/paiements?cancelled=1`,
   });
 
   if (params.phase === 'registration') {

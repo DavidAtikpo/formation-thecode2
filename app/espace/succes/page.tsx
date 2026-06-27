@@ -41,10 +41,13 @@ function SuccessContent() {
     fetch(`/api/enrollment/verify?${query}`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => {
-        setStatus(data.status === 'paid' ? 'paid' : 'pending');
+        const ok = data.status === 'paid' || data.status === 'active';
+        setStatus(ok ? 'paid' : 'pending');
       })
       .catch(() => setStatus('error'));
   }, [provider, phase, sessionId, transactionId, enrollmentId]);
+
+  const isRegistration = phase === 'registration';
 
   if (status === 'loading') {
     return <LoadingState fullScreen message="Vérification du paiement…" />;
@@ -56,7 +59,7 @@ function SuccessContent() {
         <div className="mb-4 text-5xl">⏳</div>
         <h1 className="text-2xl font-bold">Paiement en cours de traitement</h1>
         <p className="mt-2 text-slate-400">Votre espace sera mis à jour sous peu.</p>
-        <Link href="/espace" className="mt-6 inline-block text-brand-400 hover:underline">
+        <Link href="/espace/paiements" className="mt-6 inline-block text-brand-400 hover:underline">
           Retour à mon espace
         </Link>
       </div>
@@ -67,7 +70,7 @@ function SuccessContent() {
     return (
       <div className="text-center">
         <h1 className="text-2xl font-bold">Paiement</h1>
-        <Link href="/espace" className="mt-4 inline-block text-brand-400 hover:underline">
+        <Link href="/espace/paiements" className="mt-4 inline-block text-brand-400 hover:underline">
           Retour à mon espace
         </Link>
       </div>
@@ -77,12 +80,16 @@ function SuccessContent() {
   return (
     <MotionCard className="text-center">
       <div className="mb-4 text-6xl">✓</div>
-      <h1 className="text-2xl font-bold text-brand-300">Paiement confirmé</h1>
+      <h1 className="text-2xl font-bold text-brand-300">
+        {isRegistration ? 'Frais d\'inscription payés !' : 'Paiement confirmé'}
+      </h1>
       <p className="mt-3 text-slate-300">
-        Les frais de formation ont été réglés. Votre inscription est complète.
+        {isRegistration
+          ? 'Votre place est réservée. Vous pouvez régler les frais de formation depuis votre espace candidat.'
+          : 'Les frais de formation ont été réglés. Votre inscription est complète.'}
       </p>
       <Link
-        href="/espace"
+        href="/espace/parcours"
         className="mt-8 inline-block rounded-xl bg-gradient-to-r from-brand-500 to-violet-600 px-8 py-3 font-semibold text-white hover:opacity-90"
       >
         Retour à mon espace

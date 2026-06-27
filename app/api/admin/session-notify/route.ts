@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || getAppBaseUrl(request);
-    const espaceUrl = `${base.replace(/\/$/, '')}/espace`;
+    const espaceUrl = `${base.replace(/\/$/, '')}/espace/parcours`;
 
     let emailsSent = 0;
     for (const enrollment of enrollments) {

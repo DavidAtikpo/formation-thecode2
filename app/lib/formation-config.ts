@@ -111,27 +111,31 @@ export const TECHNOLOGIES: { icon: IconName; title: string; description: string;
   },
 ];
 
+/** Date de début de la cohorte — toutes les durées (2 sem., 3 mois, 4 mois) sont disponibles à chaque date. */
 export const FORMATION_SESSIONS = [
   {
     id: 'july_2026' as const,
-    label: 'Session de juillet',
-    period: '1er – 15 juillet 2026',
-    shortLabel: '1 – 15 juil. 2026',
-    startDate: '2026-07-01',
+    label: 'Session du 5 juillet 2026',
+    tabLabel: '5 juillet',
+    period: 'Début le 5 juillet 2026',
+    shortLabel: '5 juil. 2026',
+    startDate: '2026-07-05',
   },
   {
     id: 'august_2026' as const,
-    label: 'Session d\'août',
-    period: '1er – 15 août 2026',
-    shortLabel: '1 – 15 août 2026',
-    startDate: '2026-08-01',
+    label: 'Session du 3 août 2026',
+    tabLabel: '3 août',
+    period: 'Début le 3 août 2026',
+    shortLabel: '3 août 2026',
+    startDate: '2026-08-03',
   },
   {
     id: 'late_august_2026' as const,
-    label: 'Session fin août',
-    period: '24 août – 7 septembre 2026',
-    shortLabel: '24 août – 7 sept. 2026',
-    startDate: '2026-08-24',
+    label: 'Session du 1er septembre 2026',
+    tabLabel: '1er septembre',
+    period: 'Début le 1er septembre 2026',
+    shortLabel: '1er sept. 2026',
+    startDate: '2026-09-01',
   },
 ] as const;
 

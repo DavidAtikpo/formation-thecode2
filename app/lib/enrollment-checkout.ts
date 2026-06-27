@@ -22,6 +22,21 @@ const VALID_DURATIONS = ['two_weeks', 'three_months', 'four_months'] as const;
 const VALID_SESSIONS = ['july_2026', 'august_2026', 'late_august_2026'] as const;
 const VALID_PAYMENT_METHODS = ['stripe', 'fedapay', 'crypto'] as const;
 
+export type EnrollmentSubmitBody = Omit<EnrollmentCheckoutBody, 'paymentMethod'>;
+
+export function parseEnrollmentSubmitBody(
+  body: unknown,
+): { data: EnrollmentSubmitBody } | { error: string } {
+  const parsed = parseEnrollmentCheckoutBody(
+    body && typeof body === 'object'
+      ? { ...(body as Record<string, unknown>), paymentMethod: 'stripe' }
+      : body,
+  );
+  if ('error' in parsed) return parsed;
+  const { paymentMethod: _pm, ...data } = parsed.data;
+  return { data };
+}
+
 export function parseEnrollmentCheckoutBody(
   body: unknown,
 ): { data: EnrollmentCheckoutBody } | { error: string } {

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import SectionIcon from '@/app/components/SectionIcon';
-import type { PaymentMethodId } from '@/app/lib/enrollment-checkout';
 import {
   DOMAINS,
   DURATIONS,
@@ -14,7 +14,6 @@ import {
   getDomain,
   getFormationSession,
   formatFormationDeadlineDays,
-  getDurationTotalUsd,
   type DomainId,
   type DurationId,
   type SessionId,
@@ -38,15 +37,13 @@ const STEPS = [
   'Informations',
   'Domaine',
   'Session',
-  'Durée',
   'Planning',
   'Confirmation',
-  'Paiement',
 ];
 
 export default function EnrollmentForm() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>('fedapay');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({
@@ -65,6 +62,10 @@ export default function EnrollmentForm() {
 
   const update = (patch: Partial<FormData>) => setForm((f) => ({ ...f, ...patch }));
 
+  const selectedSession = form.formationSession
+    ? getFormationSession(form.formationSession)
+    : null;
+
   const toggleDay = (dayId: string) => {
     setForm((f) => {
       const days = f.scheduleDays.includes(dayId)
@@ -82,13 +83,15 @@ export default function EnrollmentForm() {
       if (!form.country || !form.phone || !form.address) return 'Coordonnées incomplètes';
     }
     if (step === 1 && !form.domain) return 'Sélectionnez un domaine';
-    if (step === 2 && !form.formationSession) return 'Sélectionnez une session de formation';
-    if (step === 3 && !form.duration) return 'Sélectionnez une durée';
-    if (step === 4) {
+    if (step === 2) {
+      if (!form.duration) return 'Choisissez une durée de formation';
+      if (!form.formationSession) return 'Choisissez votre date de début';
+    }
+    if (step === 3) {
       if (form.scheduleDays.length !== 3) return 'Choisissez exactement 3 jours';
       if (!form.scheduleHours) return 'Choisissez un créneau horaire';
     }
-    if (step === 5 && !form.acceptedPrivacy) return 'Acceptez la politique de confidentialité';
+    if (step === 4 && !form.acceptedPrivacy) return 'Acceptez la politique de confidentialité';
     return null;
   };
 
@@ -104,21 +107,21 @@ export default function EnrollmentForm() {
     setStep((s) => Math.max(s - 1, 0));
   };
 
-  const pay = async () => {
+  const submit = async () => {
     const err = validateStep();
     if (err) { setError(err); return; }
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/enrollment/checkout', {
+      const res = await fetch('/api/enrollment/submit', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, paymentMethod }),
+        body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Paiement impossible');
-      window.location.href = data.url;
+      if (!res.ok) throw new Error(data.error ?? 'Inscription impossible');
+      router.push('/espace/paiements');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erreur');
       setBusy(false);
@@ -197,90 +200,103 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 2: Formation session */}
+        {/* Step 2: Durée (onglets) puis date de début */}
         {step === 2 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white sm:text-xl">Session de formation</h2>
-            <p className="text-xs leading-relaxed text-slate-400 sm:text-sm">
-              Choisissez la période qui vous convient.{' '}
-              <strong className="font-medium text-slate-200">
-                Deux rencontres de préparation
-              </strong>{' '}
-              (Design Thinking et Scrum) auront lieu avant le début de votre session.
-            </p>
-            <div className="grid gap-2 sm:gap-3">
-              {FORMATION_SESSIONS.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => update({ formationSession: s.id })}
-                  className={`rounded-lg border p-3 text-left transition sm:rounded-xl sm:p-3.5 ${
-                    form.formationSession === s.id
-                      ? 'border-brand-400 bg-brand-400/10 ring-1 ring-brand-400'
-                      : 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                  }`}
-                >
-                  <p className="text-sm font-semibold text-white">{s.label}</p>
-                  <p className="mt-1 text-xs text-brand-300 sm:text-sm">{s.period}</p>
-                </button>
-              ))}
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-white sm:text-xl">Choisissez votre session</h2>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                Sélectionnez d&apos;abord la durée, puis la date à laquelle vous souhaitez commencer.
+                Deux rencontres de préparation (Design Thinking et Scrum) auront lieu avant chaque début.
+              </p>
             </div>
-          </div>
-        )}
 
-        {/* Step 3: Duration */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white sm:text-xl">Durée de la formation</h2>
-            <div className="grid gap-2 sm:gap-3">
-              {DURATIONS.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => update({ duration: d.id })}
-                  className={`rounded-lg border p-3 text-left transition sm:rounded-xl sm:p-3.5 ${
-                    form.duration === d.id
-                      ? 'border-violet-400 bg-violet-400/10 ring-1 ring-violet-400'
-                      : 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                  }`}
-                >
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-white">{d.label}</p>
-                    <span className="rounded-full bg-violet-400/15 px-2 py-0.5 text-[10px] text-violet-300">
-                      {d.highlight}
+            <div>
+              <p className="mb-2 text-xs font-medium text-slate-300 sm:text-sm">Durée de formation</p>
+              <div className="flex rounded-lg border border-white/10 bg-white/[0.03] p-1">
+                {DURATIONS.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => update({ duration: d.id })}
+                    className={`flex-1 rounded-md px-1.5 py-2 text-center text-[11px] font-semibold transition sm:px-3 sm:py-2.5 sm:text-sm ${
+                      form.duration === d.id
+                        ? 'bg-gradient-to-r from-brand-500 to-violet-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {form.duration && (
+              <div>
+                <p className="mb-2 text-xs font-medium text-slate-300 sm:text-sm">
+                  Date de début — {getDuration(form.duration).label}
+                </p>
+                <div className="grid gap-2 sm:gap-3">
+                  {FORMATION_SESSIONS.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => update({ formationSession: s.id })}
+                      className={`rounded-lg border p-3 text-left transition sm:rounded-xl sm:p-3.5 ${
+                        form.formationSession === s.id
+                          ? 'border-brand-400 bg-brand-400/10 ring-1 ring-brand-400'
+                          : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-white">{s.tabLabel} 2026</p>
+                      <p className="mt-0.5 text-xs text-brand-300 sm:text-sm">{s.period}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedSession && price && (
+              <div className="rounded-lg border border-brand-400/30 bg-brand-400/5 p-3 sm:rounded-xl sm:p-4">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <SectionIcon name="calendar" size="sm" className="bg-brand-400/10 text-brand-300" />
+                  <h3 className="text-sm font-semibold text-white sm:text-base">
+                    {selectedSession.period} · {price.label}
+                  </h3>
+                  <span className="rounded-full bg-violet-400/15 px-2 py-0.5 text-[10px] text-violet-300">
+                    {price.highlight}
+                  </span>
+                  {'personal' in price && price.personal && (
+                    <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] text-emerald-300">
+                      Personnelle
                     </span>
-                    {'personal' in d && d.personal && (
-                      <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] text-emerald-300">
-                        Personnelle
-                      </span>
-                    )}
+                  )}
+                </div>
+                <p className="text-xs text-slate-400">{price.subtitle}</p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                  {price.description}
+                </p>
+                <div className="mt-3 space-y-0.5 border-t border-white/10 pt-3 text-xs">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Frais d&apos;inscription</span>
+                    <span>{price.registrationFeeUsd} $</span>
                   </div>
-                  <p className="mb-1 text-xs text-slate-400">{d.subtitle}</p>
-                  <p className="mb-2 text-xs leading-relaxed text-slate-400">{d.description}</p>
-                  <div className="space-y-0.5 border-t border-white/10 pt-2 text-xs">
-                    <>
-                      <div className="flex justify-between text-slate-500">
-                        <span>Inscription</span>
-                        <span>{d.registrationFeeUsd} $</span>
-                      </div>
-                      <div className="flex justify-between text-slate-500">
-                        <span>Formation</span>
-                        <span>{formatUsd(d.formationFeeUsd)} $</span>
-                      </div>
-                    </>
-                    <div className="flex justify-between font-semibold text-brand-300">
-                      <span>Total</span>
-                      <span>{formatUsd(getDurationTotalUsd(d))} $</span>
-                    </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Frais de formation</span>
+                    <span>{formatUsd(price.formationFeeUsd)} $</span>
                   </div>
-                </button>
-              ))}
-            </div>
+                  <div className="flex justify-between border-t border-white/10 pt-1.5 font-semibold text-brand-300">
+                    <span>Total</span>
+                    <span>{formatUsd(price.registrationFeeUsd + price.formationFeeUsd)} $</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Step 4: Schedule */}
-        {step === 4 && (
+        {/* Step 3: Schedule */}
+        {step === 3 && (
           <div className="space-y-4 sm:space-y-5">
             <h2 className="text-lg font-bold text-white sm:text-xl">Planning — 3 jours par semaine</h2>
             <div>
@@ -326,8 +342,8 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 5: Confirmation */}
-        {step === 5 && (
+        {/* Step 4: Confirmation */}
+        {step === 4 && (
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-white sm:text-xl">Récapitulatif</h2>
             <div className="space-y-1.5 rounded-lg bg-white/5 p-3 text-xs sm:rounded-xl sm:p-3.5 sm:text-sm">
@@ -336,11 +352,8 @@ export default function EnrollmentForm() {
               <Row label="Téléphone" value={form.phone} />
               <Row label="Adresse" value={form.address} />
               {form.domain && <Row label="Domaine" value={getDomain(form.domain).label} />}
-              {form.formationSession && (
-                <Row
-                  label="Session"
-                  value={`${getFormationSession(form.formationSession).label} — ${getFormationSession(form.formationSession).period}`}
-                />
+              {selectedSession && (
+                <Row label="Date de début" value={selectedSession.period} />
               )}
               {price && <Row label="Durée" value={price.label} />}
               <Row label="Jours" value={form.scheduleDays.map((d) => WEEK_DAYS.find((w) => w.id === d)?.label).join(', ')} />
@@ -359,15 +372,19 @@ export default function EnrollmentForm() {
                       </div>
                     </>
                     <p className="border-t border-white/10 pt-2 text-sm text-slate-400">
-                      À payer maintenant : frais d&apos;inscription
+                      Les frais d&apos;inscription et de formation se règlent ensuite dans votre
+                      espace candidat.
                     </p>
                     <p className="text-base font-bold text-brand-300 sm:text-lg">
-                      {formatUsd(price.registrationFeeUsd)} $
+                      Inscription : {formatUsd(price.registrationFeeUsd)} $
+                      {price.formationFeeUsd > 0 &&
+                        ` · Formation : ${formatUsd(price.formationFeeUsd)} $`}
                     </p>
                     {price.formationFeeUsd > 0 && (
                       <p className="text-[11px] text-slate-500">
-                        Frais de formation ({formatUsd(price.formationFeeUsd)} $) — à régler dans
-                        votre espace candidat sous {formatFormationDeadlineDays(price.formationFeeDeadlineDays)} après le début de session.
+                        Frais de formation à régler sous{' '}
+                        {formatFormationDeadlineDays(price.formationFeeDeadlineDays)} après le début
+                        de session.
                       </p>
                     )}
                   </div>
@@ -392,106 +409,17 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 6: Payment */}
-        {step === 6 && (
-          <div className="space-y-4 text-center">
-            <div className="text-4xl">💳</div>
-            <h2 className="text-lg font-bold text-white sm:text-xl">Frais d&apos;inscription</h2>
-            <p className="text-xs text-slate-400 sm:text-sm">
-              Seuls les frais d&apos;inscription sont dus aujourd&apos;hui. Les frais de formation
-              se règlent ensuite dans votre espace candidat.
-            </p>
-            {price && (
-              <div>
-                <p className="text-xl font-bold text-brand-300 sm:text-2xl">
-                  {formatUsd(price.registrationFeeUsd)} $
-                </p>
-                {price.formationFeeUsd > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    + {formatUsd(price.formationFeeUsd)} $ de frais de formation (plus tard)
-                  </p>
-                )}
-                {paymentMethod === 'fedapay' && (
-                  <p className="mt-1 text-xs text-slate-400">
-                    ≈ {Math.round(price.registrationFeeUsd * 600).toLocaleString('fr-FR')} FCFA via FedaPay
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-2 text-left sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('fedapay')}
-                className={`rounded-lg border p-3 transition sm:rounded-xl sm:p-3.5 ${
-                  paymentMethod === 'fedapay'
-                    ? 'border-brand-400 bg-brand-400/10 ring-1 ring-brand-400'
-                    : 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                }`}
-              >
-                <p className="text-sm font-semibold text-white">FedaPay</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  Mobile Money, carte — FCFA
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('stripe')}
-                className={`rounded-lg border p-3 transition sm:rounded-xl sm:p-3.5 ${
-                  paymentMethod === 'stripe'
-                    ? 'border-violet-400 bg-violet-400/10 ring-1 ring-violet-400'
-                    : 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                }`}
-              >
-                <p className="text-sm font-semibold text-white">Stripe</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  Carte bancaire — dollars
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('crypto')}
-                className={`rounded-lg border p-3 transition sm:rounded-xl sm:p-3.5 ${
-                  paymentMethod === 'crypto'
-                    ? 'border-amber-400 bg-amber-400/10 ring-1 ring-amber-400'
-                    : 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                }`}
-              >
-                <p className="text-sm font-semibold text-white">Crypto</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  BTC, USDT, ETH… — dollars
-                </p>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={pay}
-              disabled={busy}
-              className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50 sm:rounded-xl sm:py-3.5 sm:text-base"
-            >
-              {busy
-                ? 'Redirection…'
-                : paymentMethod === 'fedapay'
-                  ? 'Payer avec FedaPay'
-                  : paymentMethod === 'crypto'
-                    ? 'Payer en crypto'
-                    : 'Payer avec Stripe'}
-            </button>
-          </div>
-        )}
-
         {/* Navigation */}
-        {step < 6 && (
-          <div className="mt-5 flex justify-between sm:mt-6">
-            <button
-              type="button"
-              onClick={back}
-              disabled={step === 0}
-              className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white disabled:invisible"
-            >
-              ← Retour
-            </button>
+        <div className="mt-5 flex justify-between sm:mt-6">
+          <button
+            type="button"
+            onClick={back}
+            disabled={step === 0 || busy}
+            className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white disabled:invisible"
+          >
+            ← Retour
+          </button>
+          {step < STEPS.length - 1 ? (
             <button
               type="button"
               onClick={next}
@@ -500,13 +428,17 @@ export default function EnrollmentForm() {
             >
               Continuer →
             </button>
-          </div>
-        )}
-        {step === 6 && (
-          <button type="button" onClick={back} className="mt-4 text-sm text-slate-400 hover:text-white">
-            ← Retour
-          </button>
-        )}
+          ) : (
+            <button
+              type="button"
+              onClick={submit}
+              disabled={busy}
+              className="rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {busy ? 'Enregistrement…' : 'Terminer l\'inscription →'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

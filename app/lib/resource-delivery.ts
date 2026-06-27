@@ -36,7 +36,7 @@ export async function deliverResourceToCandidates(
   const alreadyDelivered = new Set(existingDeliveries.map((d) => d.enrollmentId));
 
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || getAppBaseUrl(request);
-  const espaceUrl = `${base.replace(/\/$/, '')}/espace?tab=cours`;
+  const espaceUrl = `${base.replace(/\/$/, '')}/espace/cours`;
   const typeLabel = labelResourceType(resource.type);
 
   let newDeliveries = 0;

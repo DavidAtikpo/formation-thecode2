@@ -30,7 +30,9 @@ export default function ComptePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Inscription impossible');
-      router.push('/compte/verifier-email');
+      router.push(
+        data.resumed ? '/compte/verifier-email?reprise=1' : '/compte/verifier-email',
+      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur');
     } finally {
@@ -52,6 +54,13 @@ export default function ComptePage() {
         {error && (
           <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300 sm:text-sm">
             {error}
+            {error.includes('existe déjà') && (
+              <p className="mt-2">
+                <Link href="/connexion" className="font-medium text-brand-300 hover:underline">
+                  Se connecter →
+                </Link>
+              </p>
+            )}
           </div>
         )}
 

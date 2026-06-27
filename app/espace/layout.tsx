@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import EspaceShell from '@/app/components/espace/EspaceShell';
 
 export const metadata: Metadata = {
   title: 'Mon espace — The Code²',
@@ -6,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function EspaceLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <EspaceShell>{children}</EspaceShell>;
 }

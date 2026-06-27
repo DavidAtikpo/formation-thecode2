@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const enrollment = await prisma.enrollment.findFirst({
     where: {
       userId,
-      status: { in: ['active', 'paid'] },
+      status: { in: ['pending_payment', 'active', 'paid'] },
     },
     orderBy: { createdAt: 'desc' },
   });

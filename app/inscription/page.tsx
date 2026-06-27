@@ -31,8 +31,12 @@ function InscriptionContent() {
           return;
         }
         const enr = user.enrollments?.[0];
-        if (enr?.status === 'active' || enr?.status === 'paid') {
-          router.replace('/espace');
+        if (
+          enr?.status === 'active' ||
+          enr?.status === 'paid' ||
+          enr?.status === 'pending_payment'
+        ) {
+          router.replace('/espace/parcours');
         }
       })
       .finally(() => setLoading(false));
@@ -47,8 +51,8 @@ function InscriptionContent() {
       <MotionSection className="mx-auto mb-5 max-w-2xl text-center sm:mb-6">
         <h1 className="text-xl font-bold sm:text-2xl">Inscription à la formation</h1>
         <p className="mt-1.5 text-xs text-slate-400 sm:text-sm">
-          Complétez le formulaire, puis payez les frais d&apos;inscription. Les frais de formation
-          se règlent ensuite dans votre espace candidat.
+          Complétez le formulaire pour finaliser votre inscription. Le paiement se fera ensuite
+          dans votre espace candidat.
         </p>
         {verified && (
           <div className="mt-3 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-300 sm:text-sm">

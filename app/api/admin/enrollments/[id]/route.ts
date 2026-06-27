@@ -156,7 +156,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (certificateJustPublished) {
     const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || getAppBaseUrl(request);
-    const espaceUrl = `${base.replace(/\/$/, '')}/espace?tab=certificat`;
+    const espaceUrl = `${base.replace(/\/$/, '')}/espace/certificat`;
 
     void sendCertificateReadyEmail({
       to: existing.user.email,

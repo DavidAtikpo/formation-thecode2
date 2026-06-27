@@ -19,6 +19,7 @@ model User {
   blockedAt                  DateTime?
   stripeCustomerId           String?      @unique
   enrollments                Enrollment[]
+  talentProfile              TalentProfile?
 
   @@schema("formation")
 }
@@ -72,6 +73,9 @@ model Enrollment {
   yearsExperience            Int?
   masteredTechnologies       String[]
   skillProfileCompletedAt    DateTime?
+  projectSiteUrl             String?
+  projectSiteTitle           String?
+  projectSiteSubmittedAt     DateTime?
   createdAt                  DateTime         @default(now())
   updatedAt                  DateTime         @updatedAt
   user                       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -237,6 +241,77 @@ enum SkillLevel {
   beginner
   experienced
 
+  @@schema("formation")
+}
+
+enum TalentCategory {
+  developer
+  designer
+  content
+  seo
+  other
+
+  @@schema("formation")
+}
+
+enum JobContractType {
+  cdi
+  freelance
+  stage
+  mission
+
+  @@schema("formation")
+}
+
+enum PublicationStatus {
+  pending
+  published
+  archived
+
+  @@schema("formation")
+}
+
+model TalentProfile {
+  id              String              @id @default(cuid())
+  userId          String?             @unique
+  firstName       String
+  lastName        String
+  category        TalentCategory
+  headline        String?
+  bio             String?
+  country         String?
+  yearsExperience Int?
+  skills          String[]
+  portfolioUrl    String?
+  availability    String[]
+  status          PublicationStatus   @default(pending)
+  publishedAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  user            User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([category])
+  @@schema("formation")
+}
+
+model JobListing {
+  id           String            @id @default(cuid())
+  title        String
+  company      String
+  description  String
+  category     TalentCategory
+  location     String?
+  remote       Boolean           @default(false)
+  contractType JobContractType
+  status       PublicationStatus @default(pending)
+  publishedAt  DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([status])
+  @@index([category])
   @@schema("formation")
 }
 

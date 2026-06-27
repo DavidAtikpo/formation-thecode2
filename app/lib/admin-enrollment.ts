@@ -62,6 +62,10 @@ export function serializeAdminEnrollment(enrollment: EnrollmentWithRelations) {
   return {
     ...rest,
     skillProfileCompletedAt: skillProfileCompletedAt?.toISOString() ?? null,
+    projectSiteSubmittedAt:
+      enrollment.projectSiteSubmittedAt instanceof Date
+        ? enrollment.projectSiteSubmittedAt.toISOString()
+        : enrollment.projectSiteSubmittedAt ?? null,
     skillProfile: serializeSkillProfile(enrollment),
     user: user
       ? {

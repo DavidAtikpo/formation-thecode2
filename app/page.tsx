@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import BinaryNeuralAnimation from './components/BinaryNeuralAnimation';
 import { MotionHero, MotionItem, MotionSection, MotionStagger } from './components/Motion';
 import SectionIcon, { type IconName } from './components/SectionIcon';
@@ -14,6 +15,7 @@ import {
   getDurationTotalUsd,
   type Duration,
 } from './lib/formation-config';
+import { ECOSYSTEM_INTRO, ECOSYSTEM_LOOP, ECOSYSTEM_PILLARS, ECOSYSTEM_TAGLINE } from './lib/ecosystem-config';
 
 const FEATURES: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'wrench', title: '100 % pratique', desc: 'Vous codez, construisez et déployez — pas de longs discours ni de cours théoriques à l\'infini' },
@@ -117,11 +119,12 @@ const HERO_BADGES: { icon: IconName; label: string }[] = [
 const STEPS = [
   { num: '1', title: 'Créez votre compte', desc: 'Inscrivez-vous en quelques minutes' },
   { num: '2', title: 'Vérifiez votre email', desc: 'Confirmez votre adresse via le lien reçu' },
-  { num: '3', title: 'Choisissez votre session', desc: 'Juillet, août ou fin août 2026 — selon votre disponibilité' },
-  { num: '4', title: 'Configurez votre parcours', desc: 'Domaine, durée et créneaux horaires' },
-  { num: '5', title: 'Payez en ligne', desc: 'FedaPay, Stripe ou crypto (BTC, USDT…)' },
-  { num: '6', title: '2 rencontres de préparation', desc: 'Design Thinking, Scrum et installation des outils — avant le début de votre session' },
-  { num: '7', title: 'Commencez la formation', desc: 'Démarrage du parcours technique à la date de votre session' },
+  { num: '3', title: 'Choisissez votre session', desc: 'Durée (2 sem., 3 ou 4 mois) puis date de début (5 juil., 3 août ou 1er sept.)' },
+  { num: '4', title: 'Configurez votre planning', desc: 'Domaine et créneaux horaires (3 jours / semaine)' },
+  { num: '5', title: 'Finalisez l\'inscription', desc: 'Validez le formulaire complet' },
+  { num: '6', title: 'Payez depuis votre espace', desc: 'Frais d\'inscription puis de formation — FedaPay, Stripe ou crypto' },
+  { num: '7', title: '2 rencontres de préparation', desc: 'Design Thinking, Scrum et installation des outils — avant le début de votre session' },
+  { num: '8', title: 'Commencez la formation', desc: 'Démarrage du parcours technique à la date de votre session' },
 ];
 
 const PAYMENT_METHODS: { icon: IconName; name: string; desc: string; tag: string }[] = [
@@ -212,16 +215,63 @@ export default function HomePage() {
           </MotionStagger>
         </MotionSection>
 
+        {/* Écosystème The Code² */}
+        <MotionSection>
+          <SectionTitle>Plus qu&apos;une formation</SectionTitle>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-brand-400 sm:text-sm">
+            {ECOSYSTEM_TAGLINE}
+          </p>
+          <p className="mb-5 max-w-2xl text-xs leading-relaxed text-slate-400 sm:mb-6 sm:text-sm">
+            {ECOSYSTEM_INTRO}
+          </p>
+          <MotionStagger className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+            {ECOSYSTEM_PILLARS.map((pillar) => (
+              <MotionItem
+                key={pillar.id}
+                className={`flex flex-col rounded-xl border p-4 sm:p-5 ${
+                  pillar.accent === 'violet'
+                    ? 'border-violet-400/25 bg-violet-400/5'
+                    : 'border-brand-400/25 bg-brand-400/5'
+                }`}
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <SectionIcon name={pillar.icon} size="md" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-white sm:text-base">{pillar.title}</h3>
+                    <p className="text-[11px] text-slate-500 sm:text-xs">{pillar.subtitle}</p>
+                  </div>
+                </div>
+                <p className="mb-4 flex-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                  {pillar.desc}
+                </p>
+                <Link
+                  href={pillar.href}
+                  className="inline-flex items-center text-xs font-semibold text-brand-400 hover:underline sm:text-sm"
+                >
+                  {pillar.cta} →
+                </Link>
+              </MotionItem>
+            ))}
+          </MotionStagger>
+          <ul className="mt-5 flex flex-col gap-1.5 sm:mt-6">
+            {ECOSYSTEM_LOOP.map((line) => (
+              <li key={line} className="flex items-start gap-2 text-xs text-slate-500 sm:text-sm">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </MotionSection>
+
         {/* Sessions de formation */}
         <MotionSection>
           <SectionTitle>Sessions de formation 2026</SectionTitle>
           <p className="mb-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
-            Trois sessions sont ouvertes à l&apos;inscription. Lors de votre inscription, vous
-            choisissez celle qui correspond à votre calendrier.{' '}
-            <strong className="font-medium text-slate-200">
-              Deux rencontres de préparation auront lieu avant la date de début
-            </strong>{' '}
-            de chaque session (Design Thinking et Scrum) — voir la section ci-dessous.
+            Choisissez votre durée (2 semaines, 3 mois ou 4 mois), puis la date de début qui vous
+            convient : <strong className="font-medium text-slate-200">5 juillet</strong>,{' '}
+            <strong className="font-medium text-slate-200">3 août</strong> ou{' '}
+            <strong className="font-medium text-slate-200">1er septembre 2026</strong>. Deux rencontres
+            de préparation (Design Thinking et Scrum) précèdent chaque session.
           </p>
           <MotionStagger className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
             {FORMATION_SESSIONS.map((session) => (
@@ -231,11 +281,11 @@ export default function HomePage() {
               >
                 <div className="mb-2 flex items-center gap-2">
                   <SectionIcon name="calendar" size="sm" className="bg-brand-400/10 text-brand-300" />
-                  <h3 className="text-sm font-semibold text-white sm:text-base">{session.label}</h3>
+                  <h3 className="text-sm font-semibold text-white sm:text-base">{session.tabLabel}</h3>
                 </div>
                 <p className="text-sm font-medium text-brand-300 sm:text-base">{session.period}</p>
                 <p className="mt-2 text-[11px] leading-relaxed text-slate-400 sm:text-xs">
-                  2 rencontres de préparation programmées avant cette date.
+                  Disponible en 2 sem., 3 mois ou 4 mois.
                 </p>
               </MotionItem>
             ))}
@@ -469,6 +519,91 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </MotionSection>
+
+        {/* Notre équipe */}
+        <MotionSection>
+          <SectionTitle>Notre équipe</SectionTitle>
+
+          <p className="mb-8 max-w-2xl text-xs leading-relaxed text-slate-400 sm:mb-10 sm:text-sm">
+            Une direction qui pilote le programme, un directeur-formateur à vos côtés au quotidien,
+            et une équipe de développeurs qui encadre les projets pratiques — comme en entreprise.
+          </p>
+
+          <div className="mb-8 flex flex-wrap items-start justify-center gap-4 sm:mb-10 sm:gap-6">
+              <div className="text-center">
+                <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border-2 border-white/25 bg-white shadow-lg sm:h-32 sm:w-32">
+                  <Image
+                    src="/images/superieur.png"
+                    alt="Nestor Tsala — superviseur The Code²"
+                    fill
+                    className="object-cover object-top"
+                    sizes="128px"
+                  />
+                </div>
+                <p className="mt-2 max-w-[7.5rem] text-xs font-semibold text-white sm:mt-3 sm:max-w-none sm:text-sm">
+                  Nestor Tsala
+                </p>
+                <p className="text-[11px] text-slate-500 sm:text-xs">Superviseur</p>
+              </div>
+              <div className="text-center">
+                <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border-2 border-brand-400/40 shadow-lg shadow-brand-500/10 ring-2 ring-brand-400/25 sm:h-32 sm:w-32">
+                  <Image
+                    src="/images/formateur.png"
+                    alt="David Atikpo — formateur The Code²"
+                    fill
+                    className="object-cover object-[center_20%]"
+                    sizes="128px"
+                  />
+                </div>
+                <p className="mt-2 max-w-[7.5rem] text-xs font-semibold text-brand-300 sm:mt-3 sm:max-w-none sm:text-sm">
+                  David Atikpo
+                </p>
+                <p className="text-[11px] text-slate-500 sm:text-xs">Formateur — directeur</p>
+              </div>
+              <div className="text-center">
+                <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border-2 border-violet-400/35 shadow-lg sm:h-32 sm:w-32">
+                  <Image
+                    src="/images/ben-anitcheou.png"
+                    alt="Ben Anitcheou — développeur The Code²"
+                    fill
+                    className="object-cover object-center"
+                    sizes="128px"
+                  />
+                </div>
+                <p className="mt-2 max-w-[7.5rem] text-xs font-semibold text-white sm:mt-3 sm:max-w-none sm:text-sm">
+                  Ben Anitcheou
+                </p>
+                <p className="text-[11px] text-slate-500 sm:text-xs">Développeur</p>
+              </div>
+              <div className="text-center">
+                <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full border-2 border-violet-400/35 shadow-lg sm:h-32 sm:w-32">
+                  <Image
+                    src="/images/bernardin-nsougan.png"
+                    alt="Bernardin N'SOUGAN Gabiev — développeur The Code²"
+                    fill
+                    className="object-cover object-[center_15%]"
+                    sizes="128px"
+                  />
+                </div>
+                <p className="mt-2 max-w-[9rem] text-xs font-semibold leading-snug text-white sm:mt-3 sm:max-w-none sm:text-sm">
+                  Bernardin N&apos;SOUGAN Gabiev
+                </p>
+                <p className="text-[11px] text-slate-500 sm:text-xs">Développeur</p>
+              </div>
+          </div>
+
+          <MotionItem className="overflow-hidden rounded-xl border border-white/10 sm:rounded-2xl">
+            <div className="relative aspect-[16/10] w-full sm:aspect-[21/9]">
+              <Image
+                src="/images/equipe-developpeurs.png"
+                alt="Équipe développeur The Code²"
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 768px) 100vw, 1152px"
+              />
+            </div>
+          </MotionItem>
         </MotionSection>
 
         {/* Comment s'inscrire */}

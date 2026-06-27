@@ -45,7 +45,7 @@ export async function POST(request: Request, context: RouteContext) {
   });
 
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || getAppBaseUrl(request);
-  const espaceUrl = `${base.replace(/\/$/, '')}/espace?tab=notes`;
+  const espaceUrl = `${base.replace(/\/$/, '')}/espace/notes`;
 
   void sendGradePublishedEmail({
     to: enrollment.user.email,

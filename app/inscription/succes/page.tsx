@@ -83,7 +83,7 @@ function SuccessContent() {
 
   useEffect(() => {
     if (!redirectReady || showSkillModal) return;
-    const timer = setTimeout(() => router.replace('/espace'), 4000);
+    const timer = setTimeout(() => router.replace('/espace/parcours'), 4000);
     return () => clearTimeout(timer);
   }, [redirectReady, showSkillModal, router]);
 
@@ -148,7 +148,7 @@ function SuccessContent() {
           </p>
         )}
         <Link
-          href="/espace"
+          href="/espace/parcours"
           className="mt-8 inline-block rounded-xl bg-gradient-to-r from-brand-500 to-violet-600 px-8 py-3 font-semibold text-white hover:opacity-90"
         >
           Accéder à mon espace
