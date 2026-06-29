@@ -50,7 +50,10 @@ model Enrollment {
   scheduleHours              String
   acceptedPrivacy            Boolean          @default(false)
   registrationFeeUsd         Int              @default(0)
-  formationFeeUsd            Int              @default(0)
+  formationFeeUsd            Float            @default(0)
+  installment1FeeUsd         Float            @default(0)
+  installment2FeeUsd         Float            @default(0)
+  installment3FeeUsd         Float            @default(0)
   amountXof                  Int
   amountUsd                  Int
   status                     EnrollmentStatus @default(pending_payment)
@@ -62,7 +65,14 @@ model Enrollment {
   formationStripeSessionId   String?          @unique
   formationFedapayTransactionId String?       @unique
   formationCryptoInvoiceId   String?          @unique
+  installment3PaymentMethod  PaymentMethod?
+  installment3StripeSessionId String?       @unique
+  installment3FedapayTransactionId String?   @unique
+  installment3CryptoInvoiceId String?       @unique
   registrationPaidAt         DateTime?
+  installment1PaidAt         DateTime?
+  installment2PaidAt         DateTime?
+  installment3PaidAt         DateTime?
   formationPaidAt            DateTime?
   paidAt                     DateTime?
   certificateIssuedAt        DateTime?
@@ -219,6 +229,9 @@ enum IdentityVerificationStatus {
 enum PaymentPhase {
   registration
   formation
+  installment_1
+  installment_2
+  installment_3
 
   @@schema("formation")
 }

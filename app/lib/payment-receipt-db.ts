@@ -26,16 +26,26 @@ export type ReceiptEnrollmentRow = {
   formationSession: string;
   registrationFeeUsd: number;
   formationFeeUsd: number;
+  installment1FeeUsd: number;
+  installment2FeeUsd: number;
+  installment3FeeUsd: number;
   registrationPaidAt: Date | null;
   formationPaidAt: Date | null;
+  installment1PaidAt: Date | null;
+  installment2PaidAt: Date | null;
+  installment3PaidAt: Date | null;
   paymentMethod: ReceiptPaymentMethod | null;
   formationPaymentMethod: ReceiptPaymentMethod | null;
+  installment3PaymentMethod: ReceiptPaymentMethod | null;
   stripeSessionId: string | null;
   fedapayTransactionId: string | null;
   cryptoInvoiceId: string | null;
   formationStripeSessionId: string | null;
   formationFedapayTransactionId: string | null;
   formationCryptoInvoiceId: string | null;
+  installment3StripeSessionId: string | null;
+  installment3FedapayTransactionId: string | null;
+  installment3CryptoInvoiceId: string | null;
   user: { email: string };
 };
 

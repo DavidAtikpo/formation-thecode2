@@ -7,14 +7,29 @@ export type Grade = {
   gradedAt: string;
 };
 
+export type ReceiptPhase =
+  | 'registration'
+  | 'formation'
+  | 'installment_1'
+  | 'installment_2'
+  | 'installment_3';
+
 export type Receipt = {
   id: string;
   receiptNumber: string;
-  phase: 'registration' | 'formation';
+  phase: ReceiptPhase;
   phaseLabel: string;
   amountUsd: number;
   paidAt: string;
   downloadUrl: string;
+};
+
+export type InstallmentRow = {
+  number: 1 | 2 | 3;
+  label: string;
+  amountUsd: number;
+  paid: boolean;
+  paidAt: string | null;
 };
 
 export type LearningResource = {
@@ -40,12 +55,16 @@ export type EnrollmentData = {
   sessionLabel: string;
   schedule: string;
   status: string;
+  paymentModel: 'installments' | 'legacy';
   registrationFeeUsd: number;
   formationFeeUsd: number;
+  totalFeeUsd: number;
   registrationPaid: boolean;
   formationPaid: boolean;
   registrationPaidAt: string | null;
   formationPaidAt: string | null;
+  installments: InstallmentRow[];
+  nextInstallment: 1 | 2 | 3 | null;
   formationDeadline: string;
   formationDeadlineDays: number;
   formationDeadlineLabel: string;
@@ -81,9 +100,17 @@ export type EnrollmentData = {
   };
 };
 
-export function enrollmentStatusLabel(status: string) {
-  if (status === 'pending_payment') return 'Inscription enregistrée — paiement en attente';
-  if (status === 'active') return 'Inscrit — formation en cours de paiement';
+export function enrollmentStatusLabel(status: string, paymentModel: 'installments' | 'legacy' = 'installments') {
+  if (status === 'pending_payment') {
+    return paymentModel === 'legacy'
+      ? 'Inscription enregistrée — paiement en attente'
+      : 'Inscription enregistrée';
+  }
+  if (status === 'active') {
+    return paymentModel === 'installments'
+      ? 'Inscrit — paiement en tranches'
+      : 'Inscrit — formation en cours de paiement';
+  }
   if (status === 'paid') return 'Inscription complète';
   return status;
 }

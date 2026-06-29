@@ -318,3 +318,46 @@ export async function sendAdminPaymentNotificationEmail(params: {
 
   return sendEmailsToAdmins(subject, html);
 }
+
+export async function sendAdminEnrollmentNotificationEmail(params: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  country: string;
+  domain: string;
+  session: string;
+  duration: string;
+  schedule: string;
+  totalFeeUsd: number;
+  adminUrl: string;
+}): Promise<number> {
+  const total =
+    Number.isInteger(params.totalFeeUsd)
+      ? String(params.totalFeeUsd)
+      : params.totalFeeUsd.toFixed(2);
+  const subject = `[Inscription] ${params.firstName} ${params.lastName} — ${params.domain}`;
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;color:#1e293b">
+      <h2 style="color:#241bff">Nouvelle inscription</h2>
+      <p style="font-size:14px;color:#64748b;margin-bottom:12px">Inscription gratuite — paiement en tranches dans l'espace candidat.</p>
+      <table style="width:100%;margin:16px 0;font-size:14px">
+        <tr><td style="color:#64748b;padding:4px 0">Candidat</td><td><strong>${escapeHtml(params.firstName)} ${escapeHtml(params.lastName)}</strong></td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Email</td><td>${escapeHtml(params.email)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Téléphone</td><td>${escapeHtml(params.phone)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Pays</td><td>${escapeHtml(params.country)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Parcours</td><td>${escapeHtml(params.domain)} — ${escapeHtml(params.duration)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Session</td><td>${escapeHtml(params.session)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Planning</td><td>${escapeHtml(params.schedule)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Tarif formation</td><td><strong>${total} $ USD</strong> (3 tranches)</td></tr>
+      </table>
+      <p style="margin:20px 0">
+        <a href="${params.adminUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+          Voir dans l'admin
+        </a>
+      </p>
+    </div>
+  `;
+
+  return sendEmailsToAdmins(subject, html);
+}

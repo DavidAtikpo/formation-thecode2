@@ -278,16 +278,20 @@ export default function EnrollmentForm() {
                 </p>
                 <div className="mt-3 space-y-0.5 border-t border-white/10 pt-3 text-xs">
                   <div className="flex justify-between text-slate-500">
-                    <span>Frais d&apos;inscription</span>
-                    <span>{price.registrationFeeUsd} $</span>
+                    <span>Inscription</span>
+                    <span className="text-emerald-300">Gratuite</span>
                   </div>
-                  <div className="flex justify-between text-slate-500">
-                    <span>Frais de formation</span>
-                    <span>{formatUsd(price.formationFeeUsd)} $</span>
+                  <div className="flex justify-between font-semibold text-brand-300">
+                    <span>Formation</span>
+                    <span>{formatUsd(price.amountUsd)} $</span>
                   </div>
-                  <div className="flex justify-between border-t border-white/10 pt-1.5 font-semibold text-brand-300">
-                    <span>Total</span>
-                    <span>{formatUsd(price.registrationFeeUsd + price.formationFeeUsd)} $</span>
+                  <div className="space-y-0.5 border-t border-white/10 pt-1.5 text-[11px] text-slate-500">
+                    {price.installments.map((inst) => (
+                      <div key={inst.number} className="flex justify-between">
+                        <span>{inst.label}</span>
+                        <span>{formatUsd(inst.amountUsd)} $</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -361,32 +365,28 @@ export default function EnrollmentForm() {
               {price && (
                 <div className="mt-3 border-t border-white/10 pt-3">
                   <div className="space-y-1 text-xs sm:text-sm">
-                    <>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Frais d&apos;inscription</span>
-                        <span>{price.registrationFeeUsd} $</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Frais de formation</span>
-                        <span>{formatUsd(price.formationFeeUsd)} $</span>
-                      </div>
-                    </>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Inscription</span>
+                      <span className="text-emerald-300">Gratuite</span>
+                    </div>
                     <p className="border-t border-white/10 pt-2 text-sm text-slate-400">
-                      Les frais d&apos;inscription et de formation se règlent ensuite dans votre
-                      espace candidat.
+                      Le paiement de la formation se fait en 3 tranches depuis votre espace candidat.
                     </p>
                     <p className="text-base font-bold text-brand-300 sm:text-lg">
-                      Inscription : {formatUsd(price.registrationFeeUsd)} $
-                      {price.formationFeeUsd > 0 &&
-                        ` · Formation : ${formatUsd(price.formationFeeUsd)} $`}
+                      Formation : {formatUsd(price.amountUsd)} $
                     </p>
-                    {price.formationFeeUsd > 0 && (
-                      <p className="text-[11px] text-slate-500">
-                        Frais de formation à régler sous{' '}
-                        {formatFormationDeadlineDays(price.formationFeeDeadlineDays)} après le début
-                        de session.
-                      </p>
-                    )}
+                    <div className="space-y-0.5 text-[11px] text-slate-500">
+                      {price.installments.map((inst) => (
+                        <div key={inst.number} className="flex justify-between">
+                          <span>{inst.label}</span>
+                          <span>{formatUsd(inst.amountUsd)} $</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Échéance finale : sous {formatFormationDeadlineDays(price.formationFeeDeadlineDays)}{' '}
+                      après le début de session.
+                    </p>
                   </div>
                 </div>
               )}

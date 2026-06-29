@@ -15,6 +15,12 @@ import {
 import { HOUR_SLOTS, WEEK_DAYS } from '@/app/lib/formation-config';
 import { PHASE_LABELS } from '@/app/lib/payment-receipt';
 import { serializeProjectSubmission } from '@/app/lib/project-submission';
+import {
+  getNextUnpaidInstallment,
+  INSTALLMENT_LABELS,
+  isInstallmentPaid,
+  usesInstallmentPlan,
+} from '@/app/lib/installment-payments';
 
 export async function GET() {
   const userId = await getVerifiedSessionUserId();
@@ -48,9 +54,37 @@ export async function GET() {
   const formationDeadlineDays = getFormationFeeDeadlineDays(enrollment.duration as DurationId);
   const now = new Date();
 
-  const registrationPaid = Boolean(enrollment.registrationPaidAt);
-  const formationPaid = Boolean(enrollment.formationPaidAt);
-  const formationOverdue = registrationPaid && !formationPaid && now > formationDeadline;
+  const installmentPlan = usesInstallmentPlan(enrollment);
+  const registrationPaid = installmentPlan
+    ? true
+    : Boolean(enrollment.registrationPaidAt);
+  const formationPaid = installmentPlan
+    ? Boolean(enrollment.installment3PaidAt)
+    : Boolean(enrollment.formationPaidAt);
+  const formationOverdue = !formationPaid && registrationPaid && now > formationDeadline;
+
+  const installments = installmentPlan
+    ? ([1, 2, 3] as const).map((number) => ({
+        number,
+        label: INSTALLMENT_LABELS[`installment_${number}`],
+        amountUsd:
+          number === 1
+            ? enrollment.installment1FeeUsd
+            : number === 2
+              ? enrollment.installment2FeeUsd
+              : enrollment.installment3FeeUsd,
+        paid: isInstallmentPaid(enrollment, number),
+        paidAt:
+          (number === 1
+            ? enrollment.installment1PaidAt
+            : number === 2
+              ? enrollment.installment2PaidAt
+              : enrollment.installment3PaidAt
+          )?.toISOString() ?? null,
+      }))
+    : [];
+
+  const nextInstallment = installmentPlan ? getNextUnpaidInstallment(enrollment) : null;
 
   let identityStatus = enrollment.identityVerificationStatus;
   if (
@@ -71,7 +105,7 @@ export async function GET() {
     id: r.id,
     receiptNumber: r.receiptNumber,
     phase: r.phase,
-    phaseLabel: PHASE_LABELS[r.phase],
+    phaseLabel: PHASE_LABELS[r.phase as keyof typeof PHASE_LABELS] ?? r.phase,
     amountUsd: r.amountUsd,
     paidAt: r.paidAt.toISOString(),
     downloadUrl: `/api/espace/receipts/${r.id}`,
@@ -112,12 +146,18 @@ export async function GET() {
       sessionLabel: session.label,
       schedule: `${scheduleLabel} — ${hoursLabel}`,
       status: enrollment.status,
+      paymentModel: installmentPlan ? 'installments' : 'legacy',
       registrationFeeUsd: enrollment.registrationFeeUsd,
       formationFeeUsd: enrollment.formationFeeUsd,
+      totalFeeUsd: installmentPlan
+        ? enrollment.formationFeeUsd
+        : enrollment.registrationFeeUsd + enrollment.formationFeeUsd,
       registrationPaid,
       formationPaid,
       registrationPaidAt: enrollment.registrationPaidAt?.toISOString() ?? null,
       formationPaidAt: enrollment.formationPaidAt?.toISOString() ?? null,
+      installments,
+      nextInstallment,
       formationDeadline: formationDeadline.toISOString(),
       formationDeadlineDays,
       formationDeadlineLabel: formatFormationDeadlineDays(formationDeadlineDays),

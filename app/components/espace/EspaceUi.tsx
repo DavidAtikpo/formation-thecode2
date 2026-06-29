@@ -37,6 +37,7 @@ export function PaymentRow({
   deadline,
   overdue,
   receipt,
+  highlight,
 }: {
   label: string;
   amount: number;
@@ -45,9 +46,14 @@ export function PaymentRow({
   deadline?: string;
   overdue?: boolean;
   receipt?: Receipt;
+  highlight?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 px-3 py-2.5">
+    <div
+      className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2.5 ${
+        highlight ? 'border-brand-400/40 bg-brand-400/5' : 'border-white/10'
+      }`}
+    >
       <div>
         <p className="text-sm font-medium text-white">{label}</p>
         <p className="text-xs text-slate-400">{formatUsd(amount)} $</p>

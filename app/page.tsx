@@ -694,19 +694,21 @@ function PriceRow({ duration, popular }: { duration: Duration; popular?: boolean
       <p className="mb-2 text-xs text-slate-400">{duration.subtitle}</p>
       <p className="mb-3 text-xs leading-relaxed text-slate-300 sm:text-sm">{duration.description}</p>
       <div className="space-y-1 border-t border-white/10 pt-2 text-xs sm:text-sm">
-        <>
-          <div className="flex justify-between text-slate-400">
-            <span>Frais d&apos;inscription</span>
-            <span>{pricing.registrationFeeUsd} $</span>
-          </div>
-          <div className="flex justify-between text-slate-400">
-            <span>Frais de formation</span>
-            <span>{formatUsd(pricing.formationFeeUsd)} $</span>
-          </div>
-        </>
-        <div className="flex justify-between border-t border-white/10 pt-1.5 font-semibold text-brand-300">
-          <span>Total</span>
+        <div className="flex justify-between text-slate-400">
+          <span>Inscription</span>
+          <span className="text-emerald-300">Gratuite</span>
+        </div>
+        <div className="flex justify-between font-semibold text-brand-300">
+          <span>Formation</span>
           <span>{formatUsd(total)} $</span>
+        </div>
+        <div className="space-y-0.5 border-t border-white/10 pt-1.5 text-[11px] text-slate-500">
+          {pricing.installments.map((inst) => (
+            <div key={inst.number} className="flex justify-between">
+              <span>{inst.label}</span>
+              <span>{formatUsd(inst.amountUsd)} $</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -11,15 +11,18 @@ import {
   assertUserCanEnroll,
   cancelStalePendingEnrollments,
 } from '@/app/lib/enrollment-security';
+import { notifyAdminsOfEnrollment } from '@/app/lib/payment-admin-notify';
 import { createEnrollmentPayment } from '@/app/lib/enrollment-payments';
 import { isCryptoConfigured } from '@/app/lib/crypto-payments';
 import { isFedapayConfigured } from '@/app/lib/fedapay';
+import { installmentPhase } from '@/app/lib/installment-payments';
 import { getStripe } from '@/app/lib/stripe';
 import { parseEnrollmentCheckoutBody } from '@/app/lib/enrollment-checkout';
-import { getDuration, usdToXof } from '@/app/lib/formation-config';
+import { getDuration, usdToXof, usdToStripeCents } from '@/app/lib/formation-config';
 
 export const runtime = 'nodejs';
 
+/** Inscription + paiement de la 1re tranche (inscription gratuite). */
 export async function POST(request: Request) {
   const userId = await getVerifiedSessionUserId();
   if (!userId) {
@@ -57,8 +60,7 @@ export async function POST(request: Request) {
 
   await cancelStalePendingEnrollments(userId);
 
-  const registrationUsd = price.registrationFeeUsd;
-  const formationUsd = price.formationFeeUsd;
+  const totalUsd = price.amountUsd;
 
   const enrollment = await prisma.enrollment.create({
     data: {
@@ -75,14 +77,19 @@ export async function POST(request: Request) {
       scheduleDays: data.scheduleDays,
       scheduleHours: data.scheduleHours,
       acceptedPrivacy: data.acceptedPrivacy,
-      registrationFeeUsd: registrationUsd,
-      formationFeeUsd: formationUsd,
-      amountXof: usdToXof(registrationUsd),
-      amountUsd: Math.round(registrationUsd),
-      paymentMethod: data.paymentMethod,
-      status: 'pending_payment',
+      registrationFeeUsd: 0,
+      formationFeeUsd: totalUsd,
+      installment1FeeUsd: price.installment1Usd,
+      installment2FeeUsd: price.installment2Usd,
+      installment3FeeUsd: price.installment3Usd,
+      amountXof: usdToXof(totalUsd),
+      amountUsd: Math.round(totalUsd),
+      status: 'active',
+      registrationPaidAt: new Date(),
     },
   });
+
+  void notifyAdminsOfEnrollment(enrollment.id);
 
   try {
     const payment = await createEnrollmentPayment({
@@ -96,9 +103,9 @@ export async function POST(request: Request) {
       durationLabel: price.label,
       domain: data.domain,
       paymentMethod: data.paymentMethod,
-      phase: 'registration',
-      amountUsd: registrationUsd,
-      stripeCents: price.registrationStripeCents,
+      phase: installmentPhase(1),
+      amountUsd: price.installment1Usd,
+      stripeCents: usdToStripeCents(price.installment1Usd),
       stripeCustomerId: user.stripeCustomerId,
       request,
     });
@@ -106,6 +113,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: payment.url });
   } catch {
     await prisma.enrollment.delete({ where: { id: enrollment.id } }).catch(() => {});
-    return apiError('Erreur lors de la création du paiement', 502);
+    return apiServerError();
   }
 }

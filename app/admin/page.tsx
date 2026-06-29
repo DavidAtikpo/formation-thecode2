@@ -57,12 +57,22 @@ type EnrollmentRow = {
   formationPaymentMethod: PaymentMethod | null;
   registrationFeeUsd?: number;
   formationFeeUsd?: number;
+  installment1FeeUsd?: number;
+  installment2FeeUsd?: number;
+  installment3FeeUsd?: number;
+  installment1PaidAt?: string | null;
+  installment2PaidAt?: string | null;
+  installment3PaidAt?: string | null;
+  installment3PaymentMethod?: PaymentMethod | null;
   stripeSessionId: string | null;
   fedapayTransactionId: string | null;
   cryptoInvoiceId: string | null;
   formationStripeSessionId: string | null;
   formationFedapayTransactionId: string | null;
   formationCryptoInvoiceId: string | null;
+  installment3StripeSessionId?: string | null;
+  installment3FedapayTransactionId?: string | null;
+  installment3CryptoInvoiceId?: string | null;
   registrationPaidAt: string | null;
   formationPaidAt: string | null;
   paidAt: string | null;
@@ -169,15 +179,47 @@ function formatDate(value: string | null) {
 }
 
 function paymentSummary(row: EnrollmentRow) {
-  if (row.registrationPaidAt && row.formationPaidAt) return 'Complet';
+  if (row.formationPaidAt) return 'Complet';
+  if ((row.installment1FeeUsd ?? 0) > 0) {
+    if (!row.installment1PaidAt) return '1re tranche due';
+    if (!row.installment2PaidAt) return '2e tranche due';
+    if (!row.installment3PaidAt) return '3e tranche due';
+    return 'Complet';
+  }
   if (row.registrationPaidAt) return 'Formation due';
   return 'Inscription due';
 }
 
+function usesInstallmentPlanRow(row: EnrollmentRow) {
+  return (row.registrationFeeUsd ?? 0) === 0 && (row.installment1FeeUsd ?? 0) > 0;
+}
+
 function paymentReference(
   enrollment: EnrollmentRow,
-  phase: 'registration' | 'formation',
+  phase: 'registration' | 'formation' | 'installment_1' | 'installment_2' | 'installment_3',
 ): string | null {
+  if (phase === 'installment_1') {
+    return (
+      enrollment.stripeSessionId ??
+      enrollment.fedapayTransactionId ??
+      enrollment.cryptoInvoiceId
+    );
+  }
+  if (phase === 'installment_2') {
+    return (
+      enrollment.formationStripeSessionId ??
+      enrollment.formationFedapayTransactionId ??
+      enrollment.formationCryptoInvoiceId
+    );
+  }
+  if (phase === 'installment_3') {
+    return (
+      enrollment.installment3StripeSessionId ??
+      enrollment.installment3FedapayTransactionId ??
+      enrollment.installment3CryptoInvoiceId ??
+      null
+    );
+  }
   if (phase === 'registration') {
     return (
       enrollment.stripeSessionId ??
@@ -192,9 +234,15 @@ function paymentReference(
   );
 }
 
-const PHASE_LABELS: Record<'registration' | 'formation', string> = {
+const PHASE_LABELS: Record<
+  'registration' | 'formation' | 'installment_1' | 'installment_2' | 'installment_3',
+  string
+> = {
   registration: "Frais d'inscription",
   formation: 'Frais de formation',
+  installment_1: '1re tranche',
+  installment_2: '2e tranche',
+  installment_3: '3e tranche',
 };
 
 function StatusBadge({ status }: { status: EnrollmentStatus }) {
@@ -840,27 +888,70 @@ export default function AdminPage() {
 
               <DetailSection title="Paiements">
                 <div className="space-y-3">
-                  <PaymentPhaseCard
-                    title={PHASE_LABELS.registration}
-                    amountUsd={selected.registrationFeeUsd ?? selected.amountUsd}
-                    amountXof={selected.amountXof}
-                    paid={Boolean(selected.registrationPaidAt)}
-                    paidAt={selected.registrationPaidAt}
-                    method={selected.paymentMethod}
-                    reference={paymentReference(selected, 'registration')}
-                  />
-                  <PaymentPhaseCard
-                    title={PHASE_LABELS.formation}
-                    amountUsd={selected.formationFeeUsd ?? 0}
-                    paid={Boolean(selected.formationPaidAt)}
-                    paidAt={selected.formationPaidAt}
-                    method={selected.formationPaymentMethod}
-                    reference={paymentReference(selected, 'formation')}
-                  />
+                  {usesInstallmentPlanRow(selected) ? (
+                    <>
+                      <p className="text-xs text-emerald-300">Inscription gratuite</p>
+                      <PaymentPhaseCard
+                        title="Prix total formation"
+                        amountUsd={selected.formationFeeUsd ?? selected.amountUsd}
+                        paid={Boolean(selected.formationPaidAt)}
+                        paidAt={selected.paidAt}
+                      />
+                      <PaymentPhaseCard
+                        title={PHASE_LABELS.installment_1}
+                        amountUsd={selected.installment1FeeUsd ?? 0}
+                        paid={Boolean(selected.installment1PaidAt)}
+                        paidAt={selected.installment1PaidAt ?? null}
+                        method={selected.paymentMethod}
+                        reference={paymentReference(selected, 'installment_1')}
+                      />
+                      <PaymentPhaseCard
+                        title={PHASE_LABELS.installment_2}
+                        amountUsd={selected.installment2FeeUsd ?? 0}
+                        paid={Boolean(selected.installment2PaidAt)}
+                        paidAt={selected.installment2PaidAt ?? null}
+                        method={selected.formationPaymentMethod}
+                        reference={paymentReference(selected, 'installment_2')}
+                      />
+                      <PaymentPhaseCard
+                        title={PHASE_LABELS.installment_3}
+                        amountUsd={selected.installment3FeeUsd ?? 0}
+                        paid={Boolean(selected.installment3PaidAt)}
+                        paidAt={selected.installment3PaidAt ?? null}
+                        method={selected.installment3PaymentMethod ?? null}
+                        reference={paymentReference(selected, 'installment_3')}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <PaymentPhaseCard
+                        title={PHASE_LABELS.registration}
+                        amountUsd={selected.registrationFeeUsd ?? selected.amountUsd}
+                        amountXof={selected.amountXof}
+                        paid={Boolean(selected.registrationPaidAt)}
+                        paidAt={selected.registrationPaidAt}
+                        method={selected.paymentMethod}
+                        reference={paymentReference(selected, 'registration')}
+                      />
+                      <PaymentPhaseCard
+                        title={PHASE_LABELS.formation}
+                        amountUsd={selected.formationFeeUsd ?? 0}
+                        paid={Boolean(selected.formationPaidAt)}
+                        paidAt={selected.formationPaidAt}
+                        method={selected.formationPaymentMethod}
+                        reference={paymentReference(selected, 'formation')}
+                      />
+                    </>
+                  )}
                   <dl className="space-y-2 border-t border-white/10 pt-3 text-xs sm:text-sm">
                     <Row
                       label="Total parcours"
-                      value={`${formatUsd((selected.registrationFeeUsd ?? selected.amountUsd) + (selected.formationFeeUsd ?? 0))} $ USD`}
+                      value={`${formatUsd(
+                        usesInstallmentPlanRow(selected)
+                          ? (selected.formationFeeUsd ?? selected.amountUsd)
+                          : (selected.registrationFeeUsd ?? selected.amountUsd) +
+                              (selected.formationFeeUsd ?? 0),
+                      )} $ USD`}
                     />
                     <Row label="Paiement complet" value={formatDate(selected.paidAt)} />
                   </dl>
@@ -1158,8 +1249,8 @@ function PaymentPhaseCard({
   amountXof?: number;
   paid: boolean;
   paidAt: string | null;
-  method: PaymentMethod | null;
-  reference: string | null;
+  method?: PaymentMethod | null;
+  reference?: string | null;
 }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">

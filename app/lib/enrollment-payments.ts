@@ -5,8 +5,16 @@ import { createFedapayPayment, isFedapayConfigured } from '@/app/lib/fedapay';
 import { usdToXof } from '@/app/lib/formation-config';
 import { getStripe } from '@/app/lib/stripe';
 import { getBaseUrl } from '@/app/lib/enrollment-checkout';
+import {
+  getCryptoOrderId,
+  getInstallmentPaymentFields,
+  getPaymentLabel,
+  getPaymentPurpose,
+  installmentNumberFromPhase,
+  type PaymentPhase,
+} from '@/app/lib/installment-payments';
 
-export type PaymentPhase = 'registration' | 'formation';
+export type { PaymentPhase } from '@/app/lib/installment-payments';
 
 export type CreatePaymentParams = {
   enrollmentId: string;
@@ -26,24 +34,82 @@ export type CreatePaymentParams = {
   request: Request;
 };
 
-export function getPaymentPurpose(phase: PaymentPhase) {
-  return phase === 'registration' ? 'formation_registration' : 'formation_fee';
+function buildSuccessUrl(base: string, phase: PaymentPhase, provider: string) {
+  const successBase = `${base}/espace/succes`;
+  if (provider === 'stripe') {
+    return `${successBase}?provider=stripe&phase=${phase}&session_id={CHECKOUT_SESSION_ID}`;
+  }
+  if (provider === 'fedapay') {
+    return `${successBase}?provider=fedapay&phase=${phase}`;
+  }
+  return `${successBase}?provider=crypto&phase=${phase}&enrollment_id={ENROLLMENT_ID}`;
 }
 
-export function getCryptoOrderId(enrollmentId: string, phase: PaymentPhase) {
-  return phase === 'registration' ? enrollmentId : `${enrollmentId}_formation`;
+async function persistPaymentReference(
+  enrollmentId: string,
+  phase: PaymentPhase,
+  paymentMethod: PaymentMethod,
+  reference: { stripeSessionId?: string; fedapayTransactionId?: string; cryptoInvoiceId?: string },
+) {
+  const installment = installmentNumberFromPhase(phase);
+  if (installment) {
+    const fields = getInstallmentPaymentFields(installment);
+    await prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        [fields.paymentMethod]: paymentMethod,
+        ...(reference.stripeSessionId
+          ? { [fields.stripeSessionId]: reference.stripeSessionId }
+          : {}),
+        ...(reference.fedapayTransactionId
+          ? { [fields.fedapayTransactionId]: reference.fedapayTransactionId }
+          : {}),
+        ...(reference.cryptoInvoiceId
+          ? { [fields.cryptoInvoiceId]: reference.cryptoInvoiceId }
+          : {}),
+      },
+    });
+    return;
+  }
+
+  if (phase === 'registration') {
+    await prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        paymentMethod,
+        ...(reference.stripeSessionId ? { stripeSessionId: reference.stripeSessionId } : {}),
+        ...(reference.fedapayTransactionId
+          ? { fedapayTransactionId: reference.fedapayTransactionId }
+          : {}),
+        ...(reference.cryptoInvoiceId ? { cryptoInvoiceId: reference.cryptoInvoiceId } : {}),
+      },
+    });
+    return;
+  }
+
+  await prisma.enrollment.update({
+    where: { id: enrollmentId },
+    data: {
+      formationPaymentMethod: paymentMethod,
+      ...(reference.stripeSessionId
+        ? { formationStripeSessionId: reference.stripeSessionId }
+        : {}),
+      ...(reference.fedapayTransactionId
+        ? { formationFedapayTransactionId: reference.fedapayTransactionId }
+        : {}),
+      ...(reference.cryptoInvoiceId
+        ? { formationCryptoInvoiceId: reference.cryptoInvoiceId }
+        : {}),
+    },
+  });
 }
 
 export async function createEnrollmentPayment(params: CreatePaymentParams) {
   const base = getBaseUrl(params.request);
   const amountXof = usdToXof(params.amountUsd);
   const purpose = getPaymentPurpose(params.phase);
-  const label =
-    params.phase === 'registration'
-      ? `Frais d'inscription — ${params.durationLabel}`
-      : `Frais de formation — ${params.durationLabel}`;
-
-  const successBase = `${base}/espace/succes`;
+  const label = getPaymentLabel(params.phase, params.durationLabel);
+  const cancelUrl = `${base}/espace/paiements?cancelled=1`;
 
   if (params.paymentMethod === 'stripe') {
     const stripe = getStripe();
@@ -65,14 +131,8 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
           quantity: 1,
         },
       ],
-      success_url:
-        params.phase === 'registration'
-          ? `${successBase}?provider=stripe&phase=registration&session_id={CHECKOUT_SESSION_ID}`
-          : `${successBase}?provider=stripe&phase=formation&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:
-        params.phase === 'registration'
-          ? `${base}/espace/paiements?cancelled=1`
-          : `${base}/espace/paiements?cancelled=1`,
+      success_url: buildSuccessUrl(base, params.phase, 'stripe'),
+      cancel_url: cancelUrl,
       metadata: {
         enrollmentId: params.enrollmentId,
         userId: params.userId,
@@ -87,17 +147,9 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
 
     if (!session.url) throw new Error('Session Stripe invalide');
 
-    if (params.phase === 'registration') {
-      await prisma.enrollment.update({
-        where: { id: params.enrollmentId },
-        data: { stripeSessionId: session.id, paymentMethod: 'stripe' },
-      });
-    } else {
-      await prisma.enrollment.update({
-        where: { id: params.enrollmentId },
-        data: { formationStripeSessionId: session.id, formationPaymentMethod: 'stripe' },
-      });
-    }
+    await persistPaymentReference(params.enrollmentId, params.phase, 'stripe', {
+      stripeSessionId: session.id,
+    });
 
     return { url: session.url };
   }
@@ -108,10 +160,7 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
     const fedapay = await createFedapayPayment({
       description: `The Code² — ${label} — ${params.firstName} ${params.lastName}`,
       amountXof,
-      callbackUrl:
-        params.phase === 'registration'
-          ? `${successBase}?provider=fedapay&phase=registration`
-          : `${successBase}?provider=fedapay&phase=formation`,
+      callbackUrl: buildSuccessUrl(base, params.phase, 'fedapay'),
       firstName: params.firstName,
       lastName: params.lastName,
       email: params.userEmail,
@@ -119,20 +168,9 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
       country: params.country,
     });
 
-    if (params.phase === 'registration') {
-      await prisma.enrollment.update({
-        where: { id: params.enrollmentId },
-        data: { fedapayTransactionId: fedapay.transactionId, paymentMethod: 'fedapay' },
-      });
-    } else {
-      await prisma.enrollment.update({
-        where: { id: params.enrollmentId },
-        data: {
-          formationFedapayTransactionId: fedapay.transactionId,
-          formationPaymentMethod: 'fedapay',
-        },
-      });
-    }
+    await persistPaymentReference(params.enrollmentId, params.phase, 'fedapay', {
+      fedapayTransactionId: fedapay.transactionId,
+    });
 
     return { url: fedapay.url };
   }
@@ -145,27 +183,18 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
     orderId,
     orderDescription: `The Code² — ${label} — ${params.firstName} ${params.lastName}`,
     ipnCallbackUrl: `${base}/api/webhooks/crypto`,
-    successUrl:
-      params.phase === 'registration'
-        ? `${successBase}?provider=crypto&phase=registration&enrollment_id=${params.enrollmentId}`
-        : `${successBase}?provider=crypto&phase=formation&enrollment_id=${params.enrollmentId}`,
-    cancelUrl:
-      params.phase === 'registration'
-        ? `${base}/espace/paiements?cancelled=1`
-        : `${base}/espace/paiements?cancelled=1`,
+    successUrl: buildSuccessUrl(base, params.phase, 'crypto').replace(
+      '{ENROLLMENT_ID}',
+      params.enrollmentId,
+    ),
+    cancelUrl,
   });
 
-  if (params.phase === 'registration') {
-    await prisma.enrollment.update({
-      where: { id: params.enrollmentId },
-      data: { cryptoInvoiceId: crypto.invoiceId, paymentMethod: 'crypto' },
-    });
-  } else {
-    await prisma.enrollment.update({
-      where: { id: params.enrollmentId },
-      data: { formationCryptoInvoiceId: crypto.invoiceId, formationPaymentMethod: 'crypto' },
-    });
-  }
+  await persistPaymentReference(params.enrollmentId, params.phase, 'crypto', {
+    cryptoInvoiceId: crypto.invoiceId,
+  });
 
   return { url: crypto.url };
 }
+
+export { getCryptoOrderId, getPaymentPurpose } from '@/app/lib/installment-payments';

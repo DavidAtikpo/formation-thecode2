@@ -2,6 +2,13 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import type { PaymentPhase } from '@/app/lib/enrollment-payments';
 import {
+  getInstallmentPaymentFields,
+  getPhaseAmountUsd,
+  getPhasePaidAt,
+  installmentNumberFromPhase,
+  INSTALLMENT_LABELS,
+} from '@/app/lib/installment-payments';
+import {
   createPaymentReceipt,
   findEnrollmentForReceipt,
   findReceiptByEnrollmentPhase,
@@ -29,6 +36,9 @@ import {
 const PHASE_LABELS: Record<PaymentPhase, string> = {
   registration: "Frais d'inscription",
   formation: 'Frais de formation',
+  installment_1: INSTALLMENT_LABELS.installment_1,
+  installment_2: INSTALLMENT_LABELS.installment_2,
+  installment_3: INSTALLMENT_LABELS.installment_3,
 };
 
 const METHOD_LABELS: Record<ReceiptPaymentMethod, string> = {
@@ -77,6 +87,16 @@ function generateReceiptNumber() {
 }
 
 function getPaymentReference(enrollment: ReceiptEnrollmentRow, phase: PaymentPhase): string | null {
+  const installment = installmentNumberFromPhase(phase);
+  if (installment) {
+    const fields = getInstallmentPaymentFields(installment);
+    return (
+      enrollment[fields.stripeSessionId] ??
+      enrollment[fields.fedapayTransactionId] ??
+      enrollment[fields.cryptoInvoiceId] ??
+      null
+    );
+  }
   if (phase === 'registration') {
     return (
       enrollment.stripeSessionId ??
@@ -97,6 +117,11 @@ function getPaymentMethod(
   enrollment: ReceiptEnrollmentRow,
   phase: PaymentPhase,
 ): ReceiptPaymentMethod | null {
+  const installment = installmentNumberFromPhase(phase);
+  if (installment) {
+    const fields = getInstallmentPaymentFields(installment);
+    return enrollment[fields.paymentMethod];
+  }
   return phase === 'registration' ? enrollment.paymentMethod : enrollment.formationPaymentMethod;
 }
 
@@ -130,10 +155,17 @@ async function resolvePaymentDisplayDetails(
   }
 
   if (paymentMethod === 'stripe') {
-    const sessionId =
-      phase === 'registration'
-        ? enrollment.stripeSessionId
-        : enrollment.formationStripeSessionId;
+    const installment = installmentNumberFromPhase(phase);
+    let sessionId: string | null = null;
+    if (installment) {
+      const fields = getInstallmentPaymentFields(installment);
+      sessionId = enrollment[fields.stripeSessionId];
+    } else {
+      sessionId =
+        phase === 'registration'
+          ? enrollment.stripeSessionId
+          : enrollment.formationStripeSessionId;
+    }
     const cardLast4 = sessionId ? await getStripeCardLast4(sessionId) : null;
     return { payerPhone: null as string | null, cardLast4 };
   }
@@ -513,13 +545,11 @@ export async function issuePaymentReceipt(enrollmentId: string, phase: PaymentPh
   if (!enrollment) return null;
 
   const method = getPaymentMethod(enrollment, phase);
-  const paidAt =
-    phase === 'registration' ? enrollment.registrationPaidAt : enrollment.formationPaidAt;
+  const paidAt = getPhasePaidAt(enrollment, phase);
 
   if (!method || !paidAt) return null;
 
-  const amountUsd =
-    phase === 'registration' ? enrollment.registrationFeeUsd : enrollment.formationFeeUsd;
+  const amountUsd = getPhaseAmountUsd(enrollment, phase);
 
   if (amountUsd <= 0) return null;
 

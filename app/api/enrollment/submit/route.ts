@@ -6,6 +6,7 @@ import {
   assertUserCanEnroll,
   cancelStalePendingEnrollments,
 } from '@/app/lib/enrollment-security';
+import { notifyAdminsOfEnrollment } from '@/app/lib/payment-admin-notify';
 import { parseEnrollmentSubmitBody } from '@/app/lib/enrollment-checkout';
 import { getDuration, usdToXof } from '@/app/lib/formation-config';
 
@@ -39,8 +40,7 @@ export async function POST(request: Request) {
 
   await cancelStalePendingEnrollments(userId);
 
-  const registrationUsd = price.registrationFeeUsd;
-  const formationUsd = price.formationFeeUsd;
+  const totalUsd = price.amountUsd;
 
   const enrollment = await prisma.enrollment.create({
     data: {
@@ -57,13 +57,19 @@ export async function POST(request: Request) {
       scheduleDays: data.scheduleDays,
       scheduleHours: data.scheduleHours,
       acceptedPrivacy: data.acceptedPrivacy,
-      registrationFeeUsd: registrationUsd,
-      formationFeeUsd: formationUsd,
-      amountXof: usdToXof(registrationUsd),
-      amountUsd: Math.round(registrationUsd),
-      status: 'pending_payment',
+      registrationFeeUsd: 0,
+      formationFeeUsd: totalUsd,
+      installment1FeeUsd: price.installment1Usd,
+      installment2FeeUsd: price.installment2Usd,
+      installment3FeeUsd: price.installment3Usd,
+      amountXof: usdToXof(totalUsd),
+      amountUsd: Math.round(totalUsd),
+      status: 'active',
+      registrationPaidAt: new Date(),
     },
   });
+
+  void notifyAdminsOfEnrollment(enrollment.id);
 
   return NextResponse.json({ ok: true, enrollmentId: enrollment.id });
 }

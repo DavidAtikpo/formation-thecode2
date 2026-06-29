@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import {
   markFormationPaidIfActive,
+  markInstallmentPaid,
   markRegistrationPaidIfPending,
 } from '@/app/lib/enrollment-security';
+import { getPhaseAmountUsd } from '@/app/lib/installment-payments';
+import type { PaymentPhase } from '@/app/lib/installment-payments';
 import {
   isCryptoWebhookConfigured,
   isCryptoWebhookPaid,
@@ -12,11 +15,18 @@ import {
 
 export const runtime = 'nodejs';
 
-function parseOrderId(orderId: string) {
-  if (orderId.endsWith('_formation')) {
-    return { enrollmentId: orderId.slice(0, -'_formation'.length), phase: 'formation' as const };
+function parseOrderId(orderId: string): { enrollmentId: string; phase: PaymentPhase } {
+  const installmentMatch = orderId.match(/^(.+)_i([123])$/);
+  if (installmentMatch) {
+    return {
+      enrollmentId: installmentMatch[1],
+      phase: `installment_${installmentMatch[2]}` as PaymentPhase,
+    };
   }
-  return { enrollmentId: orderId, phase: 'registration' as const };
+  if (orderId.endsWith('_formation')) {
+    return { enrollmentId: orderId.slice(0, -'_formation'.length), phase: 'formation' };
+  }
+  return { enrollmentId: orderId, phase: 'registration' };
 }
 
 export async function POST(request: Request) {
@@ -48,27 +58,35 @@ export async function POST(request: Request) {
     const { enrollmentId, phase } = parseOrderId(orderId);
 
     const enrollment = await prisma.enrollment.findFirst({
-      where:
-        phase === 'registration'
-          ? { id: enrollmentId, status: 'pending_payment', paymentMethod: 'crypto' }
-          : { id: enrollmentId, status: 'active', formationPaidAt: null, formationPaymentMethod: 'crypto' },
+      where: { id: enrollmentId },
     });
 
     if (!enrollment) {
       return NextResponse.json({ received: true });
     }
 
-    const expectedUsd =
-      phase === 'registration' ? enrollment.registrationFeeUsd : enrollment.formationFeeUsd;
+    const expectedUsd = getPhaseAmountUsd(enrollment, phase);
     const priceAmount = payload.price_amount;
     if (typeof priceAmount === 'number' && priceAmount !== expectedUsd) {
       return NextResponse.json({ received: true });
     }
 
     if (phase === 'registration') {
+      if (enrollment.status !== 'pending_payment' || enrollment.paymentMethod !== 'crypto') {
+        return NextResponse.json({ received: true });
+      }
       await markRegistrationPaidIfPending(enrollment.id);
-    } else {
+    } else if (phase === 'formation') {
+      if (enrollment.status !== 'active' || enrollment.formationPaymentMethod !== 'crypto') {
+        return NextResponse.json({ received: true });
+      }
       await markFormationPaidIfActive(enrollment.id);
+    } else {
+      const installment = Number(phase.replace('installment_', '')) as 1 | 2 | 3;
+      if (enrollment.status !== 'active' && enrollment.status !== 'paid') {
+        return NextResponse.json({ received: true });
+      }
+      await markInstallmentPaid(enrollment.id, installment);
     }
   } catch {
     return NextResponse.json({ error: 'Erreur traitement' }, { status: 500 });

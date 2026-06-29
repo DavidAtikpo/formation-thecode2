@@ -80,8 +80,10 @@ export default function EspaceProvider({ children }: { children: ReactNode }) {
     return {
       identite: data.identity.status !== 'verified',
       paiements:
-        !data.registrationPaid ||
-        (data.registrationPaid && !data.formationPaid && data.formationFeeUsd > 0),
+        data.paymentModel === 'installments'
+          ? !data.formationPaid
+          : !data.registrationPaid ||
+            (data.registrationPaid && !data.formationPaid && data.formationFeeUsd > 0),
       projet: !data.project.url,
       cours: resources.length > 0,
       notes: data.grades.length > 0,

@@ -1,4 +1,10 @@
 import { prisma } from '@/app/lib/prisma';
+import {
+  allInstallmentsPaid,
+  installmentPhase,
+  type InstallmentNumber,
+  usesInstallmentPlan,
+} from '@/app/lib/installment-payments';
 import { notifyAdminsOfPayment } from '@/app/lib/payment-admin-notify';
 import { issuePaymentReceipt } from '@/app/lib/payment-receipt';
 
@@ -73,8 +79,69 @@ export async function markFormationPaidIfActive(enrollmentId: string) {
   return updated;
 }
 
+export async function markInstallmentPaid(enrollmentId: string, installment: InstallmentNumber) {
+  const enrollment = await prisma.enrollment.findFirst({
+    where: {
+      id: enrollmentId,
+      status: { in: ['active', 'paid'] },
+      registrationPaidAt: { not: null },
+    },
+  });
+
+  if (!enrollment || !usesInstallmentPlan(enrollment)) return null;
+
+  const paidField =
+    installment === 1
+      ? 'installment1PaidAt'
+      : installment === 2
+        ? 'installment2PaidAt'
+        : 'installment3PaidAt';
+
+  if (enrollment[paidField]) {
+    return enrollment;
+  }
+
+  const now = new Date();
+  const phase = installmentPhase(installment);
+  const complete = installment === 3;
+
+  await prisma.enrollment.update({
+    where: { id: enrollmentId },
+    data: {
+      [paidField]: now,
+      ...(complete
+        ? {
+            status: 'paid',
+            formationPaidAt: now,
+            paidAt: now,
+          }
+        : {}),
+    },
+  });
+
+  const updated = await prisma.enrollment.findUnique({ where: { id: enrollmentId } });
+  if (updated) {
+    await issuePaymentReceipt(enrollmentId, phase).catch(() => {});
+    await notifyAdminsOfPayment(enrollmentId, phase).catch(() => {});
+  }
+  return updated;
+}
+
+export function isEnrollmentFullyPaid(enrollment: {
+  registrationFeeUsd: number;
+  installment1FeeUsd: number;
+  formationPaidAt: Date | null;
+  installment1PaidAt: Date | null;
+  installment2PaidAt: Date | null;
+  installment3PaidAt: Date | null;
+}) {
+  if (usesInstallmentPlan(enrollment)) {
+    return allInstallmentsPaid(enrollment);
+  }
+  return Boolean(enrollment.formationPaidAt);
+}
+
 /** @deprecated Utiliser markRegistrationPaidIfPending ou markFormationPaidIfActive */
 export async function markEnrollmentPaidIfPending(enrollmentId: string) {
   return markRegistrationPaidIfPending(enrollmentId);
 }
-

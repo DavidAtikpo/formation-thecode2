@@ -1,4 +1,5 @@
 import type { IconName } from '@/app/components/SectionIcon';
+import { splitInstallments } from '@/app/lib/installment-payments';
 
 export const DOMAINS: {
   id: 'frontend' | 'backend' | 'mobile' | 'fullstack' | 'seo_social';
@@ -43,9 +44,8 @@ export const DURATIONS = [
     id: 'two_weeks' as const,
     label: '2 semaines',
     subtitle: '6 heures par semaine',
-    pricingMode: 'split' as const,
-    registrationFeeUsd: 12,
-    formationFeeUsd: 25,
+    pricingMode: 'installments' as const,
+    totalFeeUsd: 37,
     description:
       'Parcours court et intensif pour découvrir le développement, valider votre motivation et poser des bases techniques solides avec un encadrement direct.',
     highlight: 'Découverte',
@@ -55,9 +55,8 @@ export const DURATIONS = [
     id: 'three_months' as const,
     label: '3 mois',
     subtitle: '3 jours par semaine',
-    pricingMode: 'split' as const,
-    registrationFeeUsd: 54,
-    formationFeeUsd: 213,
+    pricingMode: 'installments' as const,
+    totalFeeUsd: 267,
     description:
       'Parcours complet pour monter en compétences sur la durée. Vous serez formé et encadré sur des projets concrets, avec des revues régulières pour gagner en autonomie et viser un profil de développeur confirmé.',
     highlight: 'Confirmé',
@@ -67,9 +66,8 @@ export const DURATIONS = [
     id: 'four_months' as const,
     label: '4 mois',
     subtitle: '3 jours par semaine — formation personnelle',
-    pricingMode: 'split' as const,
-    registrationFeeUsd: 90,
-    formationFeeUsd: 264.99,
+    pricingMode: 'installments' as const,
+    totalFeeUsd: 354.99,
     personal: true,
     description:
       'Accompagnement individualisé sur 4 mois avec un formateur dédié — formation en tête-à-tête, pas en groupe. Un mois supplémentaire pour viser un niveau senior : maîtrise technique, gestion de projet agile et portfolio de réalisations professionnelles.',
@@ -167,15 +165,24 @@ export function formatUsd(amount: number) {
 }
 
 export function getDurationTotalUsd(duration: Duration) {
-  return duration.registrationFeeUsd + duration.formationFeeUsd;
+  return duration.totalFeeUsd;
 }
 
-export function getRegistrationFeeUsd(duration: Duration) {
-  return duration.registrationFeeUsd;
+export function getRegistrationFeeUsd(_duration: Duration) {
+  return 0;
 }
 
 export function getFormationFeeUsd(duration: Duration) {
-  return duration.formationFeeUsd;
+  return duration.totalFeeUsd;
+}
+
+export function getDurationInstallments(duration: Duration) {
+  const [i1, i2, i3] = splitInstallments(duration.totalFeeUsd);
+  return [
+    { number: 1 as const, amountUsd: i1, label: '1re tranche' },
+    { number: 2 as const, amountUsd: i2, label: '2e tranche' },
+    { number: 3 as const, amountUsd: i3, label: '3e tranche' },
+  ];
 }
 
 export function usdToStripeCents(amountUsd: number) {
@@ -187,20 +194,23 @@ export function usdToXof(amountUsd: number) {
 }
 
 export function getDurationPricing(duration: Duration) {
-  const registrationFeeUsd = getRegistrationFeeUsd(duration);
-  const formationFeeUsd = getFormationFeeUsd(duration);
-  const amountUsd = registrationFeeUsd + formationFeeUsd;
+  const totalFeeUsd = duration.totalFeeUsd;
+  const [installment1Usd, installment2Usd, installment3Usd] = splitInstallments(totalFeeUsd);
 
   return {
-    pricingMode: 'split' as const,
+    pricingMode: 'installments' as const,
     personal: 'personal' in duration && Boolean(duration.personal),
-    registrationFeeUsd,
-    formationFeeUsd,
-    amountUsd,
-    amountUsdInt: Math.round(amountUsd * 100) / 100,
-    registrationStripeCents: usdToStripeCents(registrationFeeUsd),
-    formationStripeCents: usdToStripeCents(formationFeeUsd),
-    stripeCents: usdToStripeCents(amountUsd),
+    registrationFeeUsd: 0,
+    formationFeeUsd: totalFeeUsd,
+    amountUsd: totalFeeUsd,
+    amountUsdInt: Math.round(totalFeeUsd * 100) / 100,
+    installment1Usd,
+    installment2Usd,
+    installment3Usd,
+    installments: getDurationInstallments(duration),
+    registrationStripeCents: 0,
+    formationStripeCents: usdToStripeCents(totalFeeUsd),
+    stripeCents: usdToStripeCents(totalFeeUsd),
   };
 }
 
