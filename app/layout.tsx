@@ -14,7 +14,7 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: 'The Code² — Former. Connecter. Livrer.',
   description:
-    'Formation pratique en développement web et digital, studio de développement sur mesure et recrutement — The Code²',
+    'Formation pratique en développement web, mobile et digital — apprenez en codant de vrais projets, avec encadrement personnalisé et certificat à la clôture.',
   icons: {
     icon: [{ url: '/logo.png', type: 'image/png' }],
     shortcut: '/logo.png',
