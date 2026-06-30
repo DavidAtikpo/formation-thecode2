@@ -22,7 +22,7 @@ export type EspaceNavId =
   | 'notes'
   | 'certificat';
 
-export const ESPACE_NAV: {
+const NAV_ITEMS: {
   id: EspaceNavId;
   href: string;
   label: string;
@@ -31,12 +31,25 @@ export const ESPACE_NAV: {
 }[] = [
   { id: 'parcours', href: '/espace/parcours', label: 'Mon parcours', shortLabel: 'Parcours', icon: GraduationCap },
   { id: 'identite', href: '/espace/identite', label: 'Vérification identité', shortLabel: 'Identité', icon: ShieldCheck },
-  { id: 'paiements', href: '/espace/paiements', label: 'Paiements', shortLabel: 'Paiements', icon: CreditCard },
+  { id: 'paiements', href: '/espace/paiements', label: 'Paiements', shortLabel: 'Paiement', icon: CreditCard },
   { id: 'projet', href: '/espace/projet', label: 'Projet hébergé', shortLabel: 'Projet', icon: Globe },
   { id: 'cours', href: '/espace/cours', label: 'Cours & tutoriels', shortLabel: 'Cours', icon: Laptop },
   { id: 'notes', href: '/espace/notes', label: 'Mes notes', shortLabel: 'Notes', icon: ScrollText },
   { id: 'certificat', href: '/espace/certificat', label: 'Certificat', shortLabel: 'Certificat', icon: Award },
 ];
+
+/** Navigation complète (sidebar desktop). */
+export const ESPACE_NAV = NAV_ITEMS;
+
+/** Bottom bar mobile — 4 entrées principales. */
+export const ESPACE_BOTTOM_NAV = NAV_ITEMS.filter((item) =>
+  (['parcours', 'cours', 'notes', 'paiements'] as EspaceNavId[]).includes(item.id),
+);
+
+/** Menu hamburger — pages secondaires. */
+export const ESPACE_MENU_NAV = NAV_ITEMS.filter((item) =>
+  (['identite', 'projet', 'certificat'] as EspaceNavId[]).includes(item.id),
+);
 
 type Badges = Partial<Record<EspaceNavId, boolean>>;
 
@@ -112,7 +125,7 @@ export default function EspaceNav({ badges }: { badges?: Badges }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0a0b1e]/95 backdrop-blur-md md:hidden">
         <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
-          {ESPACE_NAV.map((item) => (
+          {ESPACE_BOTTOM_NAV.map((item) => (
             <NavLink
               key={item.id}
               href={item.href}

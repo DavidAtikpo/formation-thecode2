@@ -4,6 +4,7 @@ import { BadgeCheck } from 'lucide-react';
 import { MotionSection } from '@/app/components/Motion';
 import EspaceNav from './EspaceNav';
 import EspaceProvider, { useEspace } from './EspaceProvider';
+import EspaceBodyClass from './EspaceBodyClass';
 
 function EspaceFrame({ children }: { children: React.ReactNode }) {
   const { data, navBadges } = useEspace();
@@ -42,6 +43,7 @@ function EspaceFrame({ children }: { children: React.ReactNode }) {
 export default function EspaceShell({ children }: { children: React.ReactNode }) {
   return (
     <EspaceProvider>
+      <EspaceBodyClass />
       <EspaceFrame>{children}</EspaceFrame>
     </EspaceProvider>
   );

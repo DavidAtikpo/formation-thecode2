@@ -6,7 +6,7 @@ import {
   assertUserCanEnroll,
   cancelStalePendingEnrollments,
 } from '@/app/lib/enrollment-security';
-import { notifyAdminsOfEnrollment } from '@/app/lib/payment-admin-notify';
+import { notifyEnrollmentCreated } from '@/app/lib/payment-admin-notify';
 import { parseEnrollmentSubmitBody } from '@/app/lib/enrollment-checkout';
 import { getDuration, usdToXof } from '@/app/lib/formation-config';
 
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     },
   });
 
-  void notifyAdminsOfEnrollment(enrollment.id);
+  void notifyEnrollmentCreated(enrollment.id);
 
   return NextResponse.json({ ok: true, enrollmentId: enrollment.id });
 }

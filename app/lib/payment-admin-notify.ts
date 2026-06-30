@@ -2,6 +2,7 @@ import type { PaymentPhase } from '@prisma/client';
 import {
   sendAdminEnrollmentNotificationEmail,
   sendAdminPaymentNotificationEmail,
+  sendEnrollmentConfirmationEmail,
 } from '@/app/lib/email';
 import { getAppBaseUrl } from '@/app/lib/email-verification';
 import {
@@ -83,7 +84,8 @@ function formatEnrollmentSchedule(scheduleDays: string[], scheduleHours: string)
   return `${days} — ${hours}`;
 }
 
-export async function notifyAdminsOfEnrollment(enrollmentId: string) {
+/** Notifie l'admin et le candidat après une nouvelle inscription. */
+export async function notifyEnrollmentCreated(enrollmentId: string) {
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
     include: { user: { select: { email: true } } },
@@ -92,19 +94,48 @@ export async function notifyAdminsOfEnrollment(enrollmentId: string) {
   if (!enrollment?.user) return;
 
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || getAppBaseUrl();
-  const adminUrl = `${base.replace(/\/$/, '')}/admin`;
+  const baseUrl = base.replace(/\/$/, '');
+  const adminUrl = `${baseUrl}/admin`;
+  const espaceUrl = `${baseUrl}/espace`;
+  const paiementsUrl = `${baseUrl}/espace/paiements`;
 
-  await sendAdminEnrollmentNotificationEmail({
-    firstName: enrollment.firstName,
-    lastName: enrollment.lastName,
-    email: enrollment.user.email,
-    phone: enrollment.phone,
-    country: enrollment.country,
-    domain: getDomain(enrollment.domain as DomainId).label,
-    session: getFormationSession(enrollment.formationSession as SessionId).period,
-    duration: getDuration(enrollment.duration as DurationId).label,
-    schedule: formatEnrollmentSchedule(enrollment.scheduleDays, enrollment.scheduleHours),
-    totalFeeUsd: enrollment.formationFeeUsd,
-    adminUrl,
-  }).catch(() => {});
+  const domain = getDomain(enrollment.domain as DomainId).label;
+  const session = getFormationSession(enrollment.formationSession as SessionId).period;
+  const duration = getDuration(enrollment.duration as DurationId).label;
+  const schedule = formatEnrollmentSchedule(enrollment.scheduleDays, enrollment.scheduleHours);
+
+  await Promise.all([
+    sendAdminEnrollmentNotificationEmail({
+      firstName: enrollment.firstName,
+      lastName: enrollment.lastName,
+      email: enrollment.user.email,
+      phone: enrollment.phone,
+      country: enrollment.country,
+      domain,
+      session,
+      duration,
+      schedule,
+      totalFeeUsd: enrollment.formationFeeUsd,
+      adminUrl,
+    }).catch(() => {}),
+    sendEnrollmentConfirmationEmail({
+      to: enrollment.user.email,
+      firstName: enrollment.firstName,
+      domain,
+      session,
+      duration,
+      schedule,
+      totalFeeUsd: enrollment.formationFeeUsd,
+      installment1Usd: enrollment.installment1FeeUsd,
+      installment2Usd: enrollment.installment2FeeUsd,
+      installment3Usd: enrollment.installment3FeeUsd,
+      espaceUrl,
+      paiementsUrl,
+    }).catch(() => {}),
+  ]);
+}
+
+/** @deprecated Utiliser notifyEnrollmentCreated */
+export async function notifyAdminsOfEnrollment(enrollmentId: string) {
+  return notifyEnrollmentCreated(enrollmentId);
 }

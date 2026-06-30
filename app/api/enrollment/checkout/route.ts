@@ -11,7 +11,7 @@ import {
   assertUserCanEnroll,
   cancelStalePendingEnrollments,
 } from '@/app/lib/enrollment-security';
-import { notifyAdminsOfEnrollment } from '@/app/lib/payment-admin-notify';
+import { notifyEnrollmentCreated } from '@/app/lib/payment-admin-notify';
 import { createEnrollmentPayment } from '@/app/lib/enrollment-payments';
 import { isCryptoConfigured } from '@/app/lib/crypto-payments';
 import { isFedapayConfigured } from '@/app/lib/fedapay';
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     },
   });
 
-  void notifyAdminsOfEnrollment(enrollment.id);
+  void notifyEnrollmentCreated(enrollment.id);
 
   try {
     const payment = await createEnrollmentPayment({

@@ -4,6 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import EspaceHeaderMenu from '@/app/components/espace/EspaceHeaderMenu';
+import type { EspaceNavId } from '@/app/components/espace/EspaceNav';
 
 type User = { id: string; email: string; isAdmin?: boolean };
 
@@ -16,6 +18,9 @@ function appSubtitle(pathname: string) {
 export default function AppHeader() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [espaceBadges, setEspaceBadges] = useState<Partial<Record<EspaceNavId, boolean>>>({});
+
+  const isEspace = pathname.startsWith('/espace');
 
   useEffect(() => {
     fetch('/api/auth/me', { credentials: 'include' })
@@ -24,6 +29,26 @@ export default function AppHeader() {
       .catch(() => setUser(null));
   }, []);
 
+  useEffect(() => {
+    if (!isEspace || !user) {
+      setEspaceBadges({});
+      return;
+    }
+
+    fetch('/api/espace', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        const d = json?.enrollment;
+        if (!d) return;
+        setEspaceBadges({
+          identite: d.identity?.status !== 'verified',
+          projet: !d.project?.url,
+          certificat: Boolean(d.certificateIssued),
+        });
+      })
+      .catch(() => setEspaceBadges({}));
+  }, [isEspace, user, pathname]);
+
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setUser(null);
@@ -31,7 +56,7 @@ export default function AppHeader() {
   };
 
   const subtitle = appSubtitle(pathname);
-  const homeHref = pathname.startsWith('/espace')
+  const homeHref = isEspace
     ? '/espace/parcours'
     : pathname.startsWith('/inscription')
       ? '/inscription'
@@ -56,38 +81,44 @@ export default function AppHeader() {
         </Link>
 
         <nav className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2.5">
-          <Link
-            href="/"
-            className="hidden px-1 text-[11px] text-slate-400 hover:text-white sm:inline sm:text-sm"
-          >
-            Site public
-          </Link>
           {user ? (
-            <>
-              {!pathname.startsWith('/espace') && (
+            isEspace ? (
+              <EspaceHeaderMenu
+                isAdmin={user.isAdmin}
+                onLogout={logout}
+                badges={espaceBadges}
+              />
+            ) : (
+              <>
+                <Link
+                  href="/"
+                  className="hidden px-1 text-[11px] text-slate-400 hover:text-white sm:inline sm:text-sm"
+                >
+                  Site public
+                </Link>
                 <Link
                   href="/espace/parcours"
                   className="px-1 text-[11px] text-slate-300 hover:text-white sm:text-sm"
                 >
                   Mon espace
                 </Link>
-              )}
-              {user.isAdmin && (
-                <Link
-                  href="/admin"
-                  className="hidden px-1 text-xs text-slate-300 hover:text-white sm:inline sm:text-sm"
+                {user.isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="hidden px-1 text-xs text-slate-300 hover:text-white sm:inline sm:text-sm"
+                  >
+                    Admin
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-slate-300 transition hover:bg-white/5 sm:px-3 sm:text-sm"
                 >
-                  Admin
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={logout}
-                className="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-slate-300 transition hover:bg-white/5 sm:px-3 sm:text-sm"
-              >
-                Déconnexion
-              </button>
-            </>
+                  Déconnexion
+                </button>
+              </>
+            )
           ) : (
             <>
               <Link href="/connexion" className="px-1 text-[11px] text-slate-300 hover:text-white sm:text-sm">

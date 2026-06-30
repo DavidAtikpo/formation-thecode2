@@ -361,3 +361,55 @@ export async function sendAdminEnrollmentNotificationEmail(params: {
 
   return sendEmailsToAdmins(subject, html);
 }
+
+function formatUsdEmail(amount: number) {
+  return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+}
+
+export async function sendEnrollmentConfirmationEmail(params: {
+  to: string;
+  firstName: string;
+  domain: string;
+  session: string;
+  duration: string;
+  schedule: string;
+  totalFeeUsd: number;
+  installment1Usd: number;
+  installment2Usd: number;
+  installment3Usd: number;
+  espaceUrl: string;
+  paiementsUrl: string;
+}): Promise<boolean> {
+  const subject = 'Inscription confirmée — The Code²';
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
+      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <p>Bonjour ${escapeHtml(params.firstName)},</p>
+      <p>Votre inscription à la formation The Code² est <strong>confirmée</strong>. L'inscription est gratuite — votre place est réservée.</p>
+      <table style="width:100%;margin:16px 0;font-size:14px;border-collapse:collapse">
+        <tr><td style="color:#64748b;padding:4px 0">Parcours</td><td>${escapeHtml(params.domain)} — ${escapeHtml(params.duration)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Session</td><td>${escapeHtml(params.session)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Planning</td><td>${escapeHtml(params.schedule)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Tarif formation</td><td><strong>${formatUsdEmail(params.totalFeeUsd)} $ USD</strong></td></tr>
+      </table>
+      <p style="font-size:14px;color:#64748b;margin-bottom:8px">Paiement en 3 tranches :</p>
+      <ul style="margin:0 0 16px;padding-left:20px;font-size:14px;color:#475569">
+        <li>1re tranche — ${formatUsdEmail(params.installment1Usd)} $</li>
+        <li>2e tranche — ${formatUsdEmail(params.installment2Usd)} $</li>
+        <li>3e tranche — ${formatUsdEmail(params.installment3Usd)} $</li>
+      </ul>
+      <p style="font-size:14px">Réglez la <strong>1re tranche</strong> depuis votre espace candidat pour finaliser votre dossier.</p>
+      <p style="margin:24px 0">
+        <a href="${params.paiementsUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+          Accéder aux paiements
+        </a>
+      </p>
+      <p style="font-size:13px;color:#64748b">
+        <a href="${params.espaceUrl}" style="color:#241bff">Mon espace candidat</a>
+      </p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+    </div>
+  `;
+
+  return sendEmail(params.to, subject, html);
+}

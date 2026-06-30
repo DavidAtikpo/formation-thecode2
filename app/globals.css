@@ -41,3 +41,15 @@ body {
 .glow-brand {
   box-shadow: 0 0 40px rgba(var(--brand-rgb), 0.25);
 }
+
+/* Chatbot au-dessus de la bottom nav mobile (espace candidat) */
+@media (max-width: 767px) {
+  body.espace-route #chatbot-bubble {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px !important;
+  }
+
+  body.espace-route #chatbot-panel {
+    bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
