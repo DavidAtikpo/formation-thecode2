@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   response.headers.set('X-DNS-Prefetch-Control', 'off');
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://chatagentcides.qrthecode2.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://chatagentcides.qrthecode2.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https: blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
   );
 
   if (request.nextUrl.pathname.startsWith('/api/')) {
