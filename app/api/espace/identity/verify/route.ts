@@ -51,14 +51,21 @@ export async function POST(request: Request) {
       return apiError('Aucune inscription active', 404);
     }
 
+    const ocrTextFromClient =
+      typeof body.ocrText === 'string' ? body.ocrText.trim().slice(0, 50_000) : '';
+
     let ocrText: string;
-    try {
-      ocrText = await extractTextFromImageUrl(fileUrl);
-    } catch {
-      return apiError(
-        'Analyse du document impossible. Réessayez avec une photo plus nette.',
-        422,
-      );
+    if (ocrTextFromClient.length >= 10) {
+      ocrText = ocrTextFromClient;
+    } else {
+      try {
+        ocrText = await extractTextFromImageUrl(fileUrl);
+      } catch {
+        return apiError(
+          'Analyse du document impossible. Réessayez avec une photo plus nette.',
+          422,
+        );
+      }
     }
     const result = verifyIdentityDocument({
       ocrText,

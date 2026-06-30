@@ -129,20 +129,37 @@ export function pickExpiryDate(
 }
 
 export async function extractTextFromImageUrl(url: string): Promise<string> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error('Impossible de lire le document');
-  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
 
-  const buffer = Buffer.from(await res.arrayBuffer());
-  const worker = await createWorker('fra+eng', 1, getTesseractOptions());
-
+  let buffer: Buffer;
   try {
-    const { data } = await worker.recognize(buffer);
-    return data.text;
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error('Impossible de lire le document');
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    if (arrayBuffer.byteLength > 8 * 1024 * 1024) {
+      throw new Error('Document trop volumineux');
+    }
+    buffer = Buffer.from(arrayBuffer);
   } finally {
-    await worker.terminate();
+    clearTimeout(timeout);
   }
+
+  const worker = await getSharedWorker();
+
+  const { data } = await worker.recognize(buffer);
+  return data.text;
+}
+
+let sharedWorkerPromise: ReturnType<typeof createWorker> | null = null;
+
+async function getSharedWorker() {
+  if (!sharedWorkerPromise) {
+    sharedWorkerPromise = createWorker('fra+eng', 1, getTesseractOptions());
+  }
+  return sharedWorkerPromise;
 }
 
 export function verifyIdentityDocument(params: {

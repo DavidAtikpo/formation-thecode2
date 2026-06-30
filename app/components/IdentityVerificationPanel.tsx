@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ReloadSpinner from '@/app/components/ReloadSpinner';
+import { extractTextFromIdentityFile } from '@/app/lib/identity-ocr-client';
 import type { IdentityDocumentType } from '@/app/lib/identity-verification';
 
 type IdentityState = {
@@ -40,18 +41,21 @@ export default function IdentityVerificationPanel({
 }: Props) {
   const [documentType, setDocumentType] = useState<IdentityDocumentType>('id_card');
   const [preview, setPreview] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState('');
   const [filePublicId, setFilePublicId] = useState('');
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = identity.status !== 'verified' && fileUrl && filePublicId;
+  const canSubmit = identity.status !== 'verified' && fileUrl && filePublicId && file;
 
-  const upload = async (file: File) => {
+  const upload = async (selected: File) => {
     setBusy(true);
     setError(null);
+    setFile(selected);
     const body = new FormData();
-    body.append('file', file);
+    body.append('file', selected);
 
     try {
       const res = await fetch('/api/espace/identity/upload', {
@@ -65,6 +69,7 @@ export default function IdentityVerificationPanel({
       setFilePublicId(data.publicId);
       setPreview(data.url);
     } catch (e: unknown) {
+      setFile(null);
       setError(e instanceof Error ? e.message : 'Erreur upload');
     } finally {
       setBusy(false);
@@ -72,24 +77,39 @@ export default function IdentityVerificationPanel({
   };
 
   const verify = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || !file) return;
     setBusy(true);
     setError(null);
+    setProgress(null);
 
     try {
+      setProgress(0);
+      const ocrText = await extractTextFromIdentityFile(file, setProgress);
+
       const res = await fetch('/api/espace/identity/verify', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentType, fileUrl, filePublicId }),
+        body: JSON.stringify({ documentType, fileUrl, filePublicId, ocrText }),
       });
-      const data = await res.json();
+
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        if (res.status === 504) {
+          throw new Error('Délai dépassé. Réessayez avec une photo plus nette ou une connexion plus stable.');
+        }
+        throw new Error('Réponse serveur invalide');
+      }
+
       if (!res.ok || !data.ok) throw new Error(data.error ?? 'Vérification échouée');
       onVerified();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erreur');
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -193,7 +213,11 @@ export default function IdentityVerificationPanel({
             className="flex w-full items-center justify-center gap-3 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-400 disabled:opacity-50"
           >
             {busy && <ReloadSpinner size="sm" label="Vérification en cours" />}
-            {busy ? 'Vérification en cours…' : 'Vérifier mon identité'}
+            {busy
+              ? progress != null
+                ? `Analyse du document… ${progress}%`
+                : 'Vérification en cours…'
+              : 'Vérifier mon identité'}
           </button>
         </>
       )}
