@@ -23,49 +23,36 @@ export default function Header() {
   };
 
   const btnClass =
-    'rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 sm:px-3.5 sm:py-2 sm:text-sm';
+    'rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 sm:px-3.5 sm:py-2 sm:text-sm';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0b1e]/90 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b-2 border-gold-400 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:px-6 sm:py-3">
-        <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+        <Link href="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <Image
             src="/logo.png"
-            alt="The Code²"
+            alt="THE CODE CODE"
             width={32}
             height={32}
             className="h-8 w-8 shrink-0 rounded-full object-cover sm:h-9 sm:w-9"
             priority
           />
           <div className="min-w-0">
-            <p className="truncate text-xs font-bold tracking-wide text-white sm:text-sm">The Code²</p>
-            <p className="hidden text-[11px] text-brand-300 sm:block sm:text-xs">Formation en ligne</p>
+            <p className="whitespace-nowrap text-[11px] font-bold tracking-tight text-slate-900 sm:text-sm">THE CODE CODE</p>
+            <p className="hidden text-[11px] text-brand-600 sm:block sm:text-xs">En ligne et en présentiel</p>
           </div>
         </Link>
 
         <nav className="flex shrink-0 flex-wrap items-center justify-end gap-1 sm:gap-2.5">
           <Link
             href="/apropos"
-            className="hidden px-0.5 text-[11px] text-slate-300 hover:text-white sm:inline sm:px-1 sm:text-sm"
+            className="hidden px-0.5 text-[11px] text-slate-600 hover:text-brand-600 sm:inline sm:px-1 sm:text-sm"
           >
             À propos
           </Link>
           <Link
-            href="/studio"
-            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
-          >
-            Studio
-          </Link>
-          <Link
-            href="/entreprises"
-            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
-          >
-            <span className="sm:hidden">Recruter</span>
-            <span className="hidden sm:inline">Entreprises</span>
-          </Link>
-          <Link
             href="/contact"
-            className="px-0.5 text-[11px] text-slate-300 hover:text-white sm:px-1 sm:text-sm"
+            className="px-0.5 text-[11px] text-slate-600 hover:text-brand-600 sm:px-1 sm:text-sm"
           >
             Contact
           </Link>
@@ -74,7 +61,7 @@ export default function Header() {
               {user.isAdmin && (
                 <Link
                   href="/admin"
-                  className="hidden px-1 text-xs text-slate-300 hover:text-white sm:inline sm:text-sm"
+                  className="hidden px-1 text-xs text-slate-600 hover:text-brand-600 sm:inline sm:text-sm"
                 >
                   Admin
                 </Link>
@@ -86,14 +73,14 @@ export default function Header() {
               <button
                 type="button"
                 onClick={logout}
-                className="px-1 text-xs text-slate-400 hover:text-white sm:text-sm"
+                className="px-1 text-xs text-slate-600 hover:text-brand-600 sm:text-sm"
               >
                 Déconnexion
               </button>
             </>
           ) : (
             <>
-              <Link href="/connexion" className="px-1 text-xs text-slate-300 hover:text-white sm:text-sm">
+              <Link href="/connexion" className="px-1 text-xs text-slate-600 hover:text-brand-600 sm:text-sm">
                 Connexion
               </Link>
               <Link href="/compte" className={btnClass}>

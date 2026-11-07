@@ -3,14 +3,25 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppHeader from './AppHeader';
+import BinaryNeuralAnimation from './BinaryNeuralAnimation';
 import Header from './Header';
 
 const APP_ROUTE_PREFIXES = ['/espace', '/inscription', '/compte'];
+const QUIET_BACKDROP_PREFIXES = ['/admin', '/espace'];
 
 function isAppRoute(pathname: string) {
   return APP_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+}
+
+export function SiteBackdrop() {
+  const pathname = usePathname();
+  const quiet = QUIET_BACKDROP_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+  if (quiet) return null;
+  return <BinaryNeuralAnimation variant="page" />;
 }
 
 export function SiteHeader() {
@@ -23,28 +34,22 @@ export function SiteFooter() {
   const appRoute = isAppRoute(pathname);
 
   return (
-    <footer className="border-t border-white/10 py-4 text-center text-xs text-slate-500 sm:py-5 sm:text-sm">
+    <footer className="relative z-10 border-t border-slate-200 bg-white/80 py-4 text-center text-xs text-slate-500 backdrop-blur-sm sm:py-5 sm:text-sm">
       <div className="mx-auto w-full max-w-6xl px-3 sm:px-6">
         {!appRoute && (
           <nav className="mb-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <Link href="/apropos" className="text-slate-400 transition hover:text-brand-400">
+            <Link href="/apropos" className="text-slate-600 transition hover:text-brand-400">
               À propos
             </Link>
-            <Link href="/studio" className="text-slate-400 transition hover:text-brand-400">
-              Studio
-            </Link>
-            <Link href="/entreprises" className="text-slate-400 transition hover:text-brand-400">
-              Entreprises
-            </Link>
-            <Link href="/contact" className="text-slate-400 transition hover:text-brand-400">
+            <Link href="/contact" className="text-slate-600 transition hover:text-brand-400">
               Contact
             </Link>
-            <Link href="/confidentialite" className="text-slate-400 transition hover:text-brand-400">
+            <Link href="/confidentialite" className="text-slate-600 transition hover:text-brand-400">
               Confidentialité
             </Link>
           </nav>
         )}
-        <p>© {new Date().getFullYear()} The Code² — Former. Connecter. Livrer.</p>
+        <p>© {new Date().getFullYear()} THE CODE CODE — Former. Connecter. Livrer.</p>
         <a
           href="https://wa.me/22892591228"
           target="_blank"

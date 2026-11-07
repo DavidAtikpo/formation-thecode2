@@ -18,7 +18,7 @@ import { isFedapayConfigured } from '@/app/lib/fedapay';
 import { installmentPhase } from '@/app/lib/installment-payments';
 import { getStripe } from '@/app/lib/stripe';
 import { parseEnrollmentCheckoutBody } from '@/app/lib/enrollment-checkout';
-import { getDuration, usdToXof, usdToStripeCents } from '@/app/lib/formation-config';
+import { getDuration, getPublicEnrollmentOffer, usdToStripeCents } from '@/app/lib/formation-config';
 
 export const runtime = 'nodejs';
 
@@ -52,15 +52,18 @@ export async function POST(request: Request) {
     return apiError('Paiement indisponible', 503);
   }
 
-  const price = getDuration(data.duration);
+  if (data.domain !== 'mobile' && data.domain !== 'fullstack') {
+    return apiError('Choisissez Développement mobile ou Fullstack', 400);
+  }
+
+  const offer = getPublicEnrollmentOffer(data.domain);
+  const price = getDuration(offer.durationId);
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     return apiUnauthorized();
   }
 
   await cancelStalePendingEnrollments(userId);
-
-  const totalUsd = price.amountUsd;
 
   const enrollment = await prisma.enrollment.create({
     data: {
@@ -72,18 +75,18 @@ export async function POST(request: Request) {
       address: data.address,
       domain: data.domain,
       formationSession: data.formationSession,
-      duration: data.duration,
+      duration: offer.durationId,
       daysPerWeek: 3,
       scheduleDays: data.scheduleDays,
       scheduleHours: data.scheduleHours,
       acceptedPrivacy: data.acceptedPrivacy,
       registrationFeeUsd: 0,
-      formationFeeUsd: totalUsd,
-      installment1FeeUsd: price.installment1Usd,
-      installment2FeeUsd: price.installment2Usd,
-      installment3FeeUsd: price.installment3Usd,
-      amountXof: usdToXof(totalUsd),
-      amountUsd: Math.round(totalUsd),
+      formationFeeUsd: offer.totalUsd,
+      installment1FeeUsd: offer.installments[0].amountUsd,
+      installment2FeeUsd: offer.installments[1].amountUsd,
+      installment3FeeUsd: offer.installments[2].amountUsd,
+      amountXof: offer.totalXof,
+      amountUsd: Math.round(offer.totalUsd),
       status: 'active',
       registrationPaidAt: new Date(),
     },
@@ -104,8 +107,8 @@ export async function POST(request: Request) {
       domain: data.domain,
       paymentMethod: data.paymentMethod,
       phase: installmentPhase(1),
-      amountUsd: price.installment1Usd,
-      stripeCents: usdToStripeCents(price.installment1Usd),
+      amountUsd: offer.installments[0].amountUsd,
+      stripeCents: usdToStripeCents(offer.installments[0].amountUsd),
       stripeCustomerId: user.stripeCustomerId,
       request,
     });

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     }
 
     if (user.blockedAt) {
-      return apiError('Ce compte a été suspendu. Contactez The Code².', 403);
+      return apiError('Ce compte a été suspendu. Contactez THE CODE CODE.', 403);
     }
 
     await syncAdminRole(user.id, user.email);

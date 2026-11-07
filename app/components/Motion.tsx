@@ -1,17 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion, type HTMLMotionProps } from 'motion/react';
+import { motion, type HTMLMotionProps } from 'motion/react';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 function useCanAnimate() {
-  const [mounted, setMounted] = useState(false);
-  const reduceMotion = useReducedMotion();
+  const [canAnimate, setCanAnimate] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setCanAnimate(!reduce);
+  }, []);
 
-  return mounted && !reduceMotion;
+  return canAnimate;
 }
 
 export const fadeUp = {

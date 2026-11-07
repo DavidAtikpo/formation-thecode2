@@ -26,11 +26,9 @@ import {
   formatUsd,
   getDomain,
   getDuration,
-  getFormationSession,
   usdToXof,
   type DomainId,
   type DurationId,
-  type SessionId,
 } from '@/app/lib/formation-config';
 
 const PHASE_LABELS: Record<PaymentPhase, string> = {
@@ -48,15 +46,15 @@ const METHOD_LABELS: Record<ReceiptPaymentMethod, string> = {
 };
 
 const COMPANY = {
-  name: 'The Code²',
+  name: 'THE CODE CODE',
   tagline: 'Formation pratique en technologies numériques',
   phone: '+228 92 59 12 28',
   phoneRaw: '+22892591228',
   address: 'Aného — Togo',
-  email: 'thecode2@qrthecode2.com',
-  brand: '#241bff',
-  brandDark: '#1d15cc',
-  brandLight: '#7d75ff',
+  email: 'thecodecode2@gmail.com',
+  brand: '#1b3fa6',
+  brandDark: '#142f7c',
+  brandLight: '#9bb4ee',
 } as const;
 
 /** Dent de scie en haut du reçu (effet ticket déchirable) */
@@ -221,7 +219,7 @@ export function buildReceiptHtml(params: {
     .receipt {
       background: #fff;
       border-radius: 0 0 12px 12px;
-      box-shadow: 0 8px 32px rgba(36, 27, 255, 0.08), 0 2px 8px rgba(15, 23, 42, 0.06);
+      box-shadow: 0 8px 32px rgba(27, 63, 166, 0.08), 0 2px 8px rgba(15, 23, 42, 0.06);
       overflow: hidden;
     }
     .sawtooth-top {
@@ -575,7 +573,7 @@ async function sendReceiptEmailForRecord(receiptId: string) {
   const enrollment = receipt.enrollment;
   const domain = getDomain(enrollment.domain as DomainId).label;
   const duration = getDuration(enrollment.duration as DurationId).label;
-  const session = getFormationSession(enrollment.formationSession as SessionId).period;
+  const session = 'Communiquée par email';
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || getAppBaseUrl();
   const downloadUrl = `${base.replace(/\/$/, '')}/api/espace/receipts/${receipt.id}`;
 
@@ -637,7 +635,7 @@ export async function receiptToDownloadHtml(receipt: PaymentReceiptWithEnrollmen
     email: enrollment.user.email,
     domain: getDomain(enrollment.domain as DomainId).label,
     duration: getDuration(enrollment.duration as DurationId).label,
-    session: getFormationSession(enrollment.formationSession as SessionId).period,
+    session: 'Communiquée par email',
     amountUsd: receipt.amountUsd,
     amountXof: receipt.amountXof,
     paymentMethod: receipt.paymentMethod,

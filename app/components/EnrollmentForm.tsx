@@ -5,15 +5,14 @@ import { useRouter } from 'next/navigation';
 import SectionIcon from '@/app/components/SectionIcon';
 import {
   DOMAINS,
-  DURATIONS,
-  FORMATION_SESSIONS,
   WEEK_DAYS,
   HOUR_SLOTS,
-  formatUsd,
-  getDuration,
+  START_DATE_NOTICE,
+  formatFcfa,
   getDomain,
-  getFormationSession,
+  getPublicEnrollmentOffer,
   formatFormationDeadlineDays,
+  getFormationFeeDeadlineDays,
   type DomainId,
   type DurationId,
   type SessionId,
@@ -33,13 +32,7 @@ type FormData = {
   acceptedPrivacy: boolean;
 };
 
-const STEPS = [
-  'Informations',
-  'Domaine',
-  'Session',
-  'Planning',
-  'Confirmation',
-];
+const STEPS = ['Informations', 'Domaine', 'Planning', 'Confirmation'];
 
 export default function EnrollmentForm() {
   const router = useRouter();
@@ -53,18 +46,14 @@ export default function EnrollmentForm() {
     phone: '',
     address: '',
     domain: '',
-    formationSession: '',
-    duration: '',
+    formationSession: 'july_2026',
+    duration: 'four_months',
     scheduleDays: [],
     scheduleHours: '',
     acceptedPrivacy: false,
   });
 
   const update = (patch: Partial<FormData>) => setForm((f) => ({ ...f, ...patch }));
-
-  const selectedSession = form.formationSession
-    ? getFormationSession(form.formationSession)
-    : null;
 
   const toggleDay = (dayId: string) => {
     setForm((f) => {
@@ -84,14 +73,10 @@ export default function EnrollmentForm() {
     }
     if (step === 1 && !form.domain) return 'Sélectionnez un domaine';
     if (step === 2) {
-      if (!form.duration) return 'Choisissez une durée de formation';
-      if (!form.formationSession) return 'Choisissez votre date de début';
-    }
-    if (step === 3) {
       if (form.scheduleDays.length !== 3) return 'Choisissez exactement 3 jours';
       if (!form.scheduleHours) return 'Choisissez un créneau horaire';
     }
-    if (step === 4 && !form.acceptedPrivacy) return 'Acceptez la politique de confidentialité';
+    if (step === 3 && !form.acceptedPrivacy) return 'Acceptez la politique de confidentialité';
     return null;
   };
 
@@ -128,7 +113,10 @@ export default function EnrollmentForm() {
     }
   };
 
-  const price = form.duration ? getDuration(form.duration) : null;
+  const offer =
+    form.domain === 'mobile' || form.domain === 'fullstack'
+      ? getPublicEnrollmentOffer(form.domain)
+      : null;
 
   return (
     <div className="mx-auto max-w-2xl px-1 sm:px-0">
@@ -137,18 +125,18 @@ export default function EnrollmentForm() {
         {STEPS.map((label, i) => (
           <div key={label} className="flex-1">
             <div
-              className={`h-1 rounded-full transition ${i <= step ? 'bg-gradient-to-r from-brand-400 to-violet-500' : 'bg-white/10'}`}
+              className={`h-1 rounded-full transition ${i <= step ? 'bg-gradient-to-r from-brand-500 to-gold-400' : 'bg-slate-200'}`}
             />
-            <p className={`mt-1 hidden text-center text-xs sm:block ${i === step ? 'text-brand-300' : 'text-slate-500'}`}>
+            <p className={`mt-1 hidden text-center text-xs sm:block ${i === step ? 'text-brand-600' : 'text-slate-500'}`}>
               {label}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm sm:rounded-2xl sm:p-5">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 backdrop-blur-sm sm:rounded-2xl sm:p-5">
         {error && (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -156,8 +144,8 @@ export default function EnrollmentForm() {
         {/* Step 0: Personal info */}
         {step === 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white sm:text-xl">Vos informations</h2>
-            <p className="text-xs text-slate-400 sm:text-sm">
+            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Vos informations</h2>
+            <p className="text-xs text-slate-600 sm:text-sm">
               La vérification d&apos;identité (carte d&apos;identité ou passeport) se fera dans votre espace
               candidat après l&apos;inscription.
             </p>
@@ -174,9 +162,17 @@ export default function EnrollmentForm() {
         {/* Step 1: Domain */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white sm:text-xl">Choisissez votre domaine</h2>
+            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Choisissez votre domaine</h2>
+            <p className="text-xs leading-relaxed text-slate-600 sm:text-sm">
+              Développement web et mobile, en ligne ou en présentiel. Pour la bureautique, le design
+              digital ou la robotique,{' '}
+              <a href="/contact" className="font-medium text-gold-700 hover:underline">
+                demandez une inscription
+              </a>
+              .
+            </p>
             <div className="grid gap-2 sm:gap-3">
-              {DOMAINS.map((d) => (
+              {DOMAINS.filter((d) => d.id === 'mobile' || d.id === 'fullstack').map((d) => (
                 <button
                   key={d.id}
                   type="button"
@@ -184,127 +180,36 @@ export default function EnrollmentForm() {
                   className={`rounded-lg border p-3 text-left transition sm:rounded-xl sm:p-3.5 ${
                     form.domain === d.id
                       ? 'border-brand-400 bg-brand-400/10 ring-1 ring-brand-400'
-                      : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <SectionIcon name={d.icon} size="sm" />
                     <div>
-                      <p className="text-sm font-semibold text-white">{d.label}</p>
-                      <p className="text-xs text-slate-400 sm:text-sm">{d.description}</p>
+                      <p className="text-sm font-semibold text-slate-900">{d.label}</p>
+                      <p className="text-xs text-slate-600 sm:text-sm">{d.description}</p>
                     </div>
                   </div>
                 </button>
               ))}
             </div>
+            {offer && (
+              <div className="rounded-lg border border-brand-400/30 bg-brand-400/5 p-3 text-xs text-slate-600 sm:rounded-xl sm:p-4 sm:text-sm">
+                <p className="font-semibold text-slate-900">
+                  {offer.title} — {offer.label} — {formatFcfa(offer.totalXof)} F CFA
+                </p>
+                <p className="mt-1">{START_DATE_NOTICE}</p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Step 2: Durée (onglets) puis date de début */}
+        {/* Step 2: Schedule */}
         {step === 2 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-lg font-bold text-white sm:text-xl">Choisissez votre session</h2>
-              <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
-                Sélectionnez d&apos;abord la durée, puis la date à laquelle vous souhaitez commencer.
-                Deux rencontres de préparation (Design Thinking et Scrum) auront lieu avant chaque début.
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-medium text-slate-300 sm:text-sm">Durée de formation</p>
-              <div className="flex rounded-lg border border-white/10 bg-white/[0.03] p-1">
-                {DURATIONS.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => update({ duration: d.id })}
-                    className={`flex-1 rounded-md px-1.5 py-2 text-center text-[11px] font-semibold transition sm:px-3 sm:py-2.5 sm:text-sm ${
-                      form.duration === d.id
-                        ? 'bg-gradient-to-r from-brand-500 to-violet-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {form.duration && (
-              <div>
-                <p className="mb-2 text-xs font-medium text-slate-300 sm:text-sm">
-                  Date de début — {getDuration(form.duration).label}
-                </p>
-                <div className="grid gap-2 sm:gap-3">
-                  {FORMATION_SESSIONS.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => update({ formationSession: s.id })}
-                      className={`rounded-lg border p-3 text-left transition sm:rounded-xl sm:p-3.5 ${
-                        form.formationSession === s.id
-                          ? 'border-brand-400 bg-brand-400/10 ring-1 ring-brand-400'
-                          : 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-white">{s.tabLabel} 2026</p>
-                      <p className="mt-0.5 text-xs text-brand-300 sm:text-sm">{s.period}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedSession && price && (
-              <div className="rounded-lg border border-brand-400/30 bg-brand-400/5 p-3 sm:rounded-xl sm:p-4">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <SectionIcon name="calendar" size="sm" className="bg-brand-400/10 text-brand-300" />
-                  <h3 className="text-sm font-semibold text-white sm:text-base">
-                    {selectedSession.period} · {price.label}
-                  </h3>
-                  <span className="rounded-full bg-violet-400/15 px-2 py-0.5 text-[10px] text-violet-300">
-                    {price.highlight}
-                  </span>
-                  {'personal' in price && price.personal && (
-                    <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] text-emerald-300">
-                      Personnelle
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-400">{price.subtitle}</p>
-                <p className="mt-2 text-xs leading-relaxed text-slate-400 sm:text-sm">
-                  {price.description}
-                </p>
-                <div className="mt-3 space-y-0.5 border-t border-white/10 pt-3 text-xs">
-                  <div className="flex justify-between text-slate-500">
-                    <span>Inscription</span>
-                    <span className="text-emerald-300">Gratuite</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-brand-300">
-                    <span>Formation</span>
-                    <span>{formatUsd(price.amountUsd)} $</span>
-                  </div>
-                  <div className="space-y-0.5 border-t border-white/10 pt-1.5 text-[11px] text-slate-500">
-                    {price.installments.map((inst) => (
-                      <div key={inst.number} className="flex justify-between">
-                        <span>{inst.label}</span>
-                        <span>{formatUsd(inst.amountUsd)} $</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Schedule */}
-        {step === 3 && (
           <div className="space-y-4 sm:space-y-5">
-            <h2 className="text-lg font-bold text-white sm:text-xl">Planning — 3 jours par semaine</h2>
+            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Planning — 3 jours par semaine</h2>
             <div>
-              <p className="mb-2 text-xs text-slate-400 sm:text-sm">
+              <p className="mb-2 text-xs text-slate-600 sm:text-sm">
                 Sélectionnez 3 jours ({form.scheduleDays.length}/3)
               </p>
               <div className="flex flex-wrap gap-2">
@@ -316,7 +221,7 @@ export default function EnrollmentForm() {
                     className={`rounded-md px-3 py-1.5 text-xs font-medium transition sm:rounded-lg sm:px-3.5 sm:py-2 sm:text-sm ${
                       form.scheduleDays.includes(d.id)
                         ? 'bg-brand-500 text-white'
-                        : 'border border-white/10 text-slate-300 hover:bg-white/5'
+                        : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     {d.label}
@@ -325,7 +230,7 @@ export default function EnrollmentForm() {
               </div>
             </div>
             <div>
-              <p className="mb-2 text-xs text-slate-400 sm:text-sm">Créneau horaire</p>
+              <p className="mb-2 text-xs text-slate-600 sm:text-sm">Créneau horaire</p>
               <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
                 {HOUR_SLOTS.map((h) => (
                   <button
@@ -334,8 +239,8 @@ export default function EnrollmentForm() {
                     onClick={() => update({ scheduleHours: h.id })}
                     className={`rounded-md border px-3 py-2 text-xs transition sm:rounded-lg sm:px-3.5 sm:py-2.5 sm:text-sm ${
                       form.scheduleHours === h.id
-                        ? 'border-violet-400 bg-violet-400/10 text-white'
-                        : 'border-white/10 text-slate-300 hover:bg-white/5'
+                        ? 'border-gold-400 bg-gold-400/15 text-brand-600'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     {h.label}
@@ -346,64 +251,62 @@ export default function EnrollmentForm() {
           </div>
         )}
 
-        {/* Step 4: Confirmation */}
-        {step === 4 && (
+        {/* Step 3: Confirmation */}
+        {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white sm:text-xl">Récapitulatif</h2>
-            <div className="space-y-1.5 rounded-lg bg-white/5 p-3 text-xs sm:rounded-xl sm:p-3.5 sm:text-sm">
+            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Récapitulatif</h2>
+            <div className="space-y-1.5 rounded-lg bg-slate-50 p-3 text-xs sm:rounded-xl sm:p-3.5 sm:text-sm">
               <Row label="Nom" value={`${form.firstName} ${form.lastName}`} />
               <Row label="Pays" value={form.country} />
               <Row label="Téléphone" value={form.phone} />
               <Row label="Adresse" value={form.address} />
               {form.domain && <Row label="Domaine" value={getDomain(form.domain).label} />}
-              {selectedSession && (
-                <Row label="Date de début" value={selectedSession.period} />
-              )}
-              {price && <Row label="Durée" value={price.label} />}
+              <Row label="Date de début" value="Communiquée par email" />
+              {offer && <Row label="Durée" value={offer.label} />}
               <Row label="Jours" value={form.scheduleDays.map((d) => WEEK_DAYS.find((w) => w.id === d)?.label).join(', ')} />
               <Row label="Horaire" value={HOUR_SLOTS.find((h) => h.id === form.scheduleHours)?.label ?? ''} />
-              {price && (
-                <div className="mt-3 border-t border-white/10 pt-3">
+              {offer && (
+                <div className="mt-3 border-t border-slate-200 pt-3">
                   <div className="space-y-1 text-xs sm:text-sm">
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-slate-600">
                       <span>Inscription</span>
-                      <span className="text-emerald-300">Gratuite</span>
+                      <span className="text-emerald-700">Gratuite</span>
                     </div>
-                    <p className="border-t border-white/10 pt-2 text-sm text-slate-400">
+                    <p className="border-t border-slate-200 pt-2 text-sm text-slate-600">
                       Le paiement de la formation se fait en 3 tranches depuis votre espace candidat.
                     </p>
-                    <p className="text-base font-bold text-brand-300 sm:text-lg">
-                      Formation : {formatUsd(price.amountUsd)} $
+                    <p className="text-base font-bold text-brand-600 sm:text-lg">
+                      Formation : {formatFcfa(offer.totalXof)} F CFA
                     </p>
                     <div className="space-y-0.5 text-[11px] text-slate-500">
-                      {price.installments.map((inst) => (
+                      {offer.installments.map((inst) => (
                         <div key={inst.number} className="flex justify-between">
                           <span>{inst.label}</span>
-                          <span>{formatUsd(inst.amountUsd)} $</span>
+                          <span>{formatFcfa(inst.amountXof)} F CFA</span>
                         </div>
                       ))}
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      Échéance finale : sous {formatFormationDeadlineDays(price.formationFeeDeadlineDays)}{' '}
+                      Échéance finale : sous {formatFormationDeadlineDays(getFormationFeeDeadlineDays(offer.durationId))}{' '}
                       après le début de session.
                     </p>
                   </div>
                 </div>
               )}
             </div>
-            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-white/10 p-3 sm:p-3.5">
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 p-3 sm:p-3.5">
               <input
                 type="checkbox"
                 checked={form.acceptedPrivacy}
                 onChange={(e) => update({ acceptedPrivacy: e.target.checked })}
                 className="mt-1 h-4 w-4 accent-brand-400"
               />
-              <span className="text-xs text-slate-300 sm:text-sm">
+              <span className="text-xs text-slate-600 sm:text-sm">
                 J&apos;ai lu et j&apos;accepte la{' '}
                 <a href="/confidentialite" target="_blank" className="text-brand-400 underline">
                   politique de confidentialité
                 </a>{' '}
-                de The Code².
+                de THE CODE CODE.
               </span>
             </label>
           </div>
@@ -415,7 +318,7 @@ export default function EnrollmentForm() {
             type="button"
             onClick={back}
             disabled={step === 0 || busy}
-            className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white disabled:invisible"
+            className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:text-brand-600 disabled:invisible"
           >
             ← Retour
           </button>
@@ -424,7 +327,7 @@ export default function EnrollmentForm() {
               type="button"
               onClick={next}
               disabled={busy}
-              className="rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              className="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
               Continuer →
             </button>
@@ -433,7 +336,7 @@ export default function EnrollmentForm() {
               type="button"
               onClick={submit}
               disabled={busy}
-              className="rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              className="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
               {busy ? 'Enregistrement…' : 'Terminer l\'inscription →'}
             </button>
@@ -457,12 +360,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-300 sm:text-sm">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-slate-600 sm:text-sm">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-brand-400/50 focus:ring-1 focus:ring-brand-400/30 sm:px-3.5 sm:py-2.5"
+        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-500 outline-none focus:border-brand-400/50 focus:ring-1 focus:ring-brand-400/30 sm:px-3.5 sm:py-2.5"
       />
     </div>
   );
@@ -472,7 +375,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
       <span className="text-slate-500">{label}</span>
-      <span className="text-right text-white">{value}</span>
+      <span className="text-right text-slate-900">{value}</span>
     </div>
   );
 }

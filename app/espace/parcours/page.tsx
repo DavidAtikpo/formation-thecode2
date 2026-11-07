@@ -17,7 +17,7 @@ export default function ParcoursPage() {
       <dl className="grid gap-2 text-xs sm:grid-cols-2 sm:text-sm">
         <InfoRow label="Domaine" value={data.domain} />
         <InfoRow label="Durée" value={data.duration} />
-        <InfoRow label="Session" value={data.session} />
+        <InfoRow label="Date de début" value="Communiquée par email" />
         <InfoRow label="Planning" value={data.schedule} />
         <InfoRow label="Statut" value={enrollmentStatusLabel(data.status)} />
       </dl>

@@ -1,15 +1,17 @@
 import nodemailer from 'nodemailer';
 import { getAdminEmails } from '@/app/lib/admin';
+import { CONTACT } from '@/app/lib/contact-config';
+import { formatFcfa, usdToXof } from '@/app/lib/formation-config';
 import type { PaymentPhase } from '@prisma/client';
 
 function buildVerificationHtml(verifyUrl: string) {
   return `
     <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
-      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <h1 style="color:#1b3fa6;font-size:22px">THE CODE CODE</h1>
       <p>Bonjour,</p>
-      <p>Confirmez votre adresse email pour poursuivre votre inscription à la formation The Code².</p>
+      <p>Confirmez votre adresse email pour poursuivre votre inscription à la formation THE CODE CODE.</p>
       <p style="margin:28px 0">
-        <a href="${verifyUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${verifyUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
           Vérifier mon email
         </a>
       </p>
@@ -27,7 +29,7 @@ async function sendViaSmtp(to: string, subject: string, html: string): Promise<b
   const port = Number(process.env.SMTP_PORT?.trim() || '465');
   const user = process.env.SMTP_USER!.trim();
   const pass = process.env.SMTP_PASS!.trim();
-  const from = process.env.EMAIL_FROM?.trim() || `The Code² <${user}>`;
+  const from = process.env.EMAIL_FROM?.trim() || `THE CODE CODE <${user}>`;
 
   const transporter = nodemailer.createTransport({
     host,
@@ -44,7 +46,7 @@ async function sendViaResend(to: string, subject: string, html: string): Promise
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) return false;
 
-  const from = process.env.EMAIL_FROM?.trim() ?? 'The Code² <onboarding@resend.dev>';
+  const from = process.env.EMAIL_FROM?.trim() ?? 'THE CODE CODE <onboarding@resend.dev>';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -66,7 +68,7 @@ function escapeHtml(text: string) {
 }
 
 function getContactRecipient() {
-  return process.env.CONTACT_EMAIL?.trim() || process.env.SMTP_USER?.trim() || null;
+  return CONTACT.email;
 }
 
 export async function sendContactEmail(params: {
@@ -78,10 +80,10 @@ export async function sendContactEmail(params: {
   const to = getContactRecipient();
   if (!to) return false;
 
-  const subject = `[Contact The Code²] ${params.subject} — ${params.name}`;
+  const subject = `[Contact THE CODE CODE] ${params.subject} — ${params.name}`;
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;color:#1e293b">
-      <h2 style="color:#241bff">Nouveau message de contact</h2>
+      <h2 style="color:#1b3fa6">Nouveau message de contact</h2>
       <p><strong>Nom :</strong> ${escapeHtml(params.name)}</p>
       <p><strong>Email :</strong> ${escapeHtml(params.email)}</p>
       <p><strong>Sujet :</strong> ${escapeHtml(params.subject)}</p>
@@ -125,12 +127,12 @@ export async function sendPaymentReceiptEmail(params: {
   downloadUrl: string;
   receiptHtml: string;
 }): Promise<boolean> {
-  const subject = `Reçu de paiement ${params.receiptNumber} — The Code²`;
+  const subject = `Reçu de paiement ${params.receiptNumber} — THE CODE CODE`;
   const amount =
     Number.isInteger(params.amountUsd) ? String(params.amountUsd) : params.amountUsd.toFixed(2);
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
-      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <h1 style="color:#1b3fa6;font-size:22px">THE CODE CODE</h1>
       <p>Bonjour,</p>
       <p>Votre paiement a bien été enregistré. Voici votre reçu :</p>
       <table style="width:100%;margin:16px 0;font-size:14px">
@@ -139,15 +141,15 @@ export async function sendPaymentReceiptEmail(params: {
         <tr><td style="color:#64748b;padding:4px 0">Montant</td><td><strong>${amount} $ USD</strong></td></tr>
       </table>
       <p style="margin:24px 0">
-        <a href="${params.downloadUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${params.downloadUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
           Télécharger le reçu
         </a>
       </p>
       <p style="font-size:13px;color:#64748b">
         Vous pouvez aussi retrouver vos reçus à tout moment dans votre
-        <a href="${params.downloadUrl.replace(/\/api\/espace\/receipts\/[^/]+$/, '/espace/paiements')}" style="color:#241bff">espace candidat</a>.
+        <a href="${params.downloadUrl.replace(/\/api\/espace\/receipts\/[^/]+$/, '/espace/paiements')}" style="color:#1b3fa6">espace candidat</a>.
       </p>
-      <p style="font-size:12px;color:#94a3b8;margin-top:24px">Merci de votre confiance — The Code²</p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">Merci de votre confiance — THE CODE CODE</p>
     </div>
   `;
 
@@ -163,7 +165,7 @@ export async function sendLearningResourceEmail(params: {
   const subject = `Nouveau contenu disponible — ${params.title}`;
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
-      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <h1 style="color:#1b3fa6;font-size:22px">THE CODE CODE</h1>
       <p>Bonjour,</p>
       <p>Un nouveau contenu de formation est disponible dans votre espace candidat :</p>
       <p style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
@@ -171,11 +173,11 @@ export async function sendLearningResourceEmail(params: {
         <span style="color:#64748b;font-size:14px">${escapeHtml(params.typeLabel)}</span>
       </p>
       <p style="margin:24px 0">
-        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
           Accéder à mon espace
         </a>
       </p>
-      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">THE CODE CODE — Formation pratique</p>
     </div>
   `;
 
@@ -183,7 +185,7 @@ export async function sendLearningResourceEmail(params: {
 }
 
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
-  const subject = 'Vérifiez votre email — The Code²';
+  const subject = 'Vérifiez votre email — THE CODE CODE';
   const html = buildVerificationHtml(verifyUrl);
   return sendEmail(to, subject, html);
 }
@@ -211,7 +213,7 @@ export async function sendGradePublishedEmail(params: {
   const subject = `Nouvelle note publiée — ${params.gradeTitle}`;
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
-      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <h1 style="color:#1b3fa6;font-size:22px">THE CODE CODE</h1>
       <p>Bonjour ${escapeHtml(params.firstName)},</p>
       <p>Une nouvelle évaluation a été publiée dans votre espace candidat :</p>
       <p style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
@@ -219,11 +221,11 @@ export async function sendGradePublishedEmail(params: {
         <span style="color:#64748b;font-size:14px">Note : ${params.score} / ${params.maxScore}</span>
       </p>
       <p style="margin:24px 0">
-        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
           Voir mes notes
         </a>
       </p>
-      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">THE CODE CODE — Formation pratique</p>
     </div>
   `;
 
@@ -235,18 +237,18 @@ export async function sendCertificateReadyEmail(params: {
   firstName: string;
   espaceUrl: string;
 }): Promise<boolean> {
-  const subject = 'Votre certificat est disponible — The Code²';
+  const subject = 'Votre certificat est disponible — THE CODE CODE';
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
-      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <h1 style="color:#1b3fa6;font-size:22px">THE CODE CODE</h1>
       <p>Bonjour ${escapeHtml(params.firstName)},</p>
       <p>Félicitations ! Votre certificat de fin de formation est maintenant disponible dans votre espace candidat.</p>
       <p style="margin:24px 0">
-        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
           Télécharger mon certificat
         </a>
       </p>
-      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">THE CODE CODE — Formation pratique</p>
     </div>
   `;
 
@@ -260,20 +262,20 @@ export async function sendSessionBroadcastEmail(params: {
   message: string;
   espaceUrl: string;
 }): Promise<boolean> {
-  const subject = `${params.subject} — The Code²`;
+  const subject = `${params.subject} — THE CODE CODE`;
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
-      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <h1 style="color:#1b3fa6;font-size:22px">THE CODE CODE</h1>
       <p>Bonjour ${escapeHtml(params.firstName)},</p>
       <div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;white-space:pre-wrap;font-size:14px;line-height:1.6">
         ${escapeHtml(params.message)}
       </div>
       <p style="margin:24px 0">
-        <a href="${params.espaceUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${params.espaceUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
           Accéder à mon espace
         </a>
       </p>
-      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">THE CODE CODE — Formation pratique</p>
     </div>
   `;
 
@@ -298,7 +300,7 @@ export async function sendAdminPaymentNotificationEmail(params: {
   const subject = `[Paiement] ${params.phaseLabel} — ${params.firstName} ${params.lastName}`;
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;color:#1e293b">
-      <h2 style="color:#241bff">Nouveau paiement reçu</h2>
+      <h2 style="color:#1b3fa6">Nouveau paiement reçu</h2>
       <table style="width:100%;margin:16px 0;font-size:14px">
         <tr><td style="color:#64748b;padding:4px 0">Candidat</td><td><strong>${escapeHtml(params.firstName)} ${escapeHtml(params.lastName)}</strong></td></tr>
         <tr><td style="color:#64748b;padding:4px 0">Email</td><td>${escapeHtml(params.email)}</td></tr>
@@ -306,10 +308,10 @@ export async function sendAdminPaymentNotificationEmail(params: {
         <tr><td style="color:#64748b;padding:4px 0">Montant</td><td><strong>${amount} $ USD</strong></td></tr>
         <tr><td style="color:#64748b;padding:4px 0">Méthode</td><td>${escapeHtml(params.paymentMethod)}</td></tr>
         <tr><td style="color:#64748b;padding:4px 0">Parcours</td><td>${escapeHtml(params.domain)} — ${escapeHtml(params.duration)}</td></tr>
-        <tr><td style="color:#64748b;padding:4px 0">Session</td><td>${escapeHtml(params.session)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Date de début</td><td>${escapeHtml(params.session)}</td></tr>
       </table>
       <p style="margin:20px 0">
-        <a href="${params.adminUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+        <a href="${params.adminUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
           Voir dans l'admin
         </a>
       </p>
@@ -332,14 +334,11 @@ export async function sendAdminEnrollmentNotificationEmail(params: {
   totalFeeUsd: number;
   adminUrl: string;
 }): Promise<number> {
-  const total =
-    Number.isInteger(params.totalFeeUsd)
-      ? String(params.totalFeeUsd)
-      : params.totalFeeUsd.toFixed(2);
+  const total = `${formatFcfa(usdToXof(params.totalFeeUsd))} F CFA`;
   const subject = `[Inscription] ${params.firstName} ${params.lastName} — ${params.domain}`;
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;color:#1e293b">
-      <h2 style="color:#241bff">Nouvelle inscription</h2>
+      <h2 style="color:#1b3fa6">Nouvelle inscription</h2>
       <p style="font-size:14px;color:#64748b;margin-bottom:12px">Inscription gratuite — paiement en tranches dans l'espace candidat.</p>
       <table style="width:100%;margin:16px 0;font-size:14px">
         <tr><td style="color:#64748b;padding:4px 0">Candidat</td><td><strong>${escapeHtml(params.firstName)} ${escapeHtml(params.lastName)}</strong></td></tr>
@@ -347,12 +346,12 @@ export async function sendAdminEnrollmentNotificationEmail(params: {
         <tr><td style="color:#64748b;padding:4px 0">Téléphone</td><td>${escapeHtml(params.phone)}</td></tr>
         <tr><td style="color:#64748b;padding:4px 0">Pays</td><td>${escapeHtml(params.country)}</td></tr>
         <tr><td style="color:#64748b;padding:4px 0">Parcours</td><td>${escapeHtml(params.domain)} — ${escapeHtml(params.duration)}</td></tr>
-        <tr><td style="color:#64748b;padding:4px 0">Session</td><td>${escapeHtml(params.session)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Date de début</td><td>${escapeHtml(params.session)}</td></tr>
         <tr><td style="color:#64748b;padding:4px 0">Planning</td><td>${escapeHtml(params.schedule)}</td></tr>
-        <tr><td style="color:#64748b;padding:4px 0">Tarif formation</td><td><strong>${total} $ USD</strong> (3 tranches)</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Tarif formation</td><td><strong>${total}</strong> (3 tranches)</td></tr>
       </table>
       <p style="margin:20px 0">
-        <a href="${params.adminUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+        <a href="${params.adminUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
           Voir dans l'admin
         </a>
       </p>
@@ -360,10 +359,6 @@ export async function sendAdminEnrollmentNotificationEmail(params: {
   `;
 
   return sendEmailsToAdmins(subject, html);
-}
-
-function formatUsdEmail(amount: number) {
-  return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
 }
 
 export async function sendEnrollmentConfirmationEmail(params: {
@@ -380,34 +375,34 @@ export async function sendEnrollmentConfirmationEmail(params: {
   espaceUrl: string;
   paiementsUrl: string;
 }): Promise<boolean> {
-  const subject = 'Inscription confirmée — The Code²';
+  const subject = 'Inscription confirmée — THE CODE CODE';
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
-      <h1 style="color:#241bff;font-size:22px">The Code²</h1>
+      <h1 style="color:#1b3fa6;font-size:22px">THE CODE CODE</h1>
       <p>Bonjour ${escapeHtml(params.firstName)},</p>
-      <p>Votre inscription à la formation The Code² est <strong>confirmée</strong>. L'inscription est gratuite — votre place est réservée.</p>
+      <p>Votre inscription à la formation THE CODE CODE est <strong>confirmée</strong>. L'inscription est gratuite — votre place est réservée.</p>
       <table style="width:100%;margin:16px 0;font-size:14px;border-collapse:collapse">
         <tr><td style="color:#64748b;padding:4px 0">Parcours</td><td>${escapeHtml(params.domain)} — ${escapeHtml(params.duration)}</td></tr>
-        <tr><td style="color:#64748b;padding:4px 0">Session</td><td>${escapeHtml(params.session)}</td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Date de début</td><td>${escapeHtml(params.session)}</td></tr>
         <tr><td style="color:#64748b;padding:4px 0">Planning</td><td>${escapeHtml(params.schedule)}</td></tr>
-        <tr><td style="color:#64748b;padding:4px 0">Tarif formation</td><td><strong>${formatUsdEmail(params.totalFeeUsd)} $ USD</strong></td></tr>
+        <tr><td style="color:#64748b;padding:4px 0">Tarif formation</td><td><strong>${formatFcfa(usdToXof(params.totalFeeUsd))} F CFA</strong></td></tr>
       </table>
       <p style="font-size:14px;color:#64748b;margin-bottom:8px">Paiement en 3 tranches :</p>
       <ul style="margin:0 0 16px;padding-left:20px;font-size:14px;color:#475569">
-        <li>1re tranche — ${formatUsdEmail(params.installment1Usd)} $</li>
-        <li>2e tranche — ${formatUsdEmail(params.installment2Usd)} $</li>
-        <li>3e tranche — ${formatUsdEmail(params.installment3Usd)} $</li>
+        <li>1re tranche — ${formatFcfa(usdToXof(params.installment1Usd))} F CFA</li>
+        <li>2e tranche — ${formatFcfa(usdToXof(params.installment2Usd))} F CFA</li>
+        <li>3e tranche — ${formatFcfa(usdToXof(params.installment3Usd))} F CFA</li>
       </ul>
       <p style="font-size:14px">Réglez la <strong>1re tranche</strong> depuis votre espace candidat pour finaliser votre dossier.</p>
       <p style="margin:24px 0">
-        <a href="${params.paiementsUrl}" style="display:inline-block;background:#241bff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${params.paiementsUrl}" style="display:inline-block;background:#1b3fa6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
           Accéder aux paiements
         </a>
       </p>
       <p style="font-size:13px;color:#64748b">
-        <a href="${params.espaceUrl}" style="color:#241bff">Mon espace candidat</a>
+        <a href="${params.espaceUrl}" style="color:#1b3fa6">Mon espace candidat</a>
       </p>
-      <p style="font-size:12px;color:#94a3b8;margin-top:24px">The Code² — Formation pratique</p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:24px">THE CODE CODE — Formation pratique</p>
     </div>
   `;
 

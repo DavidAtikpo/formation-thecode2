@@ -489,6 +489,12 @@ export default function AdminPage() {
             Notifications
           </Link>
           <Link
+            href="/admin/realisations"
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300 hover:bg-white/5 sm:text-sm"
+          >
+            Réalisations
+          </Link>
+          <Link
             href="/admin/cours"
             className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300 hover:bg-white/5 sm:text-sm"
           >
@@ -568,7 +574,7 @@ export default function AdminPage() {
             onClick={() => setProfileFilter(f.id)}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition sm:text-sm ${
               profileFilter === f.id
-                ? 'bg-violet-600 text-white'
+                ? 'bg-brand-500 text-white'
                 : 'border border-white/10 text-slate-400 hover:bg-white/5'
             }`}
           >

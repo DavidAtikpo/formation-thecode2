@@ -76,6 +76,149 @@ export const DURATIONS = [
   },
 ] as const;
 
+export type CatalogTier = {
+  duration: string;
+  priceFcfa: number;
+};
+
+export type CatalogCourse = {
+  code: string;
+  title: string;
+  details: string;
+  duration: string;
+  priceFcfa: number;
+  /** Plusieurs durées et tarifs, comme pour le développement web et mobile. */
+  tiers?: CatalogTier[];
+  icon: IconName;
+};
+
+export type CatalogGroup = {
+  id: 'office_design' | 'web_mobile' | 'robotics';
+  title: string;
+  intro: string;
+  ctaHref: string;
+  ctaLabel: string;
+  courses: CatalogCourse[];
+};
+
+/** Catalogue affiché sur la page d’accueil, tarifs en F CFA, en ligne ou en présentiel. */
+export const FORMATION_CATALOG: CatalogGroup[] = [
+  {
+    id: 'office_design',
+    title: 'Bureautique, design et digital',
+    ctaHref: '/contact',
+    ctaLabel: 'Demander une inscription',
+    intro:
+      'Prenez en main l’ordinateur, les outils de bureau, le design, la vidéo, les réseaux sociaux et l’intelligence artificielle. Chaque parcours se suit en ligne ou en présentiel.',
+    courses: [
+      {
+        code: '01',
+        title: 'Initiation à l’informatique',
+        details: 'Ordinateur et internet',
+        duration: '1 mois',
+        priceFcfa: 10000,
+        icon: 'monitor',
+      },
+      {
+        code: '02',
+        title: 'Bureautique',
+        details: 'Word, Excel, PowerPoint, Publisher',
+        duration: '3 mois',
+        priceFcfa: 55000,
+        icon: 'sheet',
+      },
+      {
+        code: '03',
+        title: 'Infographie',
+        details: 'Photoshop et design graphique',
+        duration: '2 mois',
+        priceFcfa: 45000,
+        icon: 'pen',
+      },
+      {
+        code: '04',
+        title: 'Montage vidéo',
+        details: 'CapCut',
+        duration: '1 mois',
+        priceFcfa: 25000,
+        icon: 'video',
+      },
+      {
+        code: '05',
+        title: 'Réseaux sociaux et business',
+        details: 'Booster une entreprise en ligne',
+        duration: '1 mois',
+        priceFcfa: 25000,
+        icon: 'trending',
+      },
+      {
+        code: '06',
+        title: 'Intelligence artificielle',
+        details: 'Outils d’IA et prompts',
+        duration: '2 sem.',
+        priceFcfa: 15000,
+        icon: 'sparkles',
+      },
+      {
+        code: '07',
+        title: 'Personnalisation d’objets',
+        details: 'T-shirts, polos, tasses, bics, bobs et casquettes',
+        duration: '1 mois',
+        priceFcfa: 30000,
+        icon: 'shirt',
+      },
+    ],
+  },
+  {
+    id: 'web_mobile',
+    title: 'Développement web et mobile',
+    ctaHref: '/compte',
+    ctaLabel: "S'inscrire",
+    intro:
+      'Deux parcours de 4 mois, en ligne ou en présentiel : les applications mobiles, ou un parcours fullstack avec des projets complets.',
+    courses: [
+      {
+        code: '08',
+        title: 'Développement mobile',
+        details: 'Flutter, React Native, Android, iOS',
+        duration: '4 mois',
+        priceFcfa: 200000,
+        icon: 'smartphone',
+      },
+      {
+        code: '09',
+        title: 'Fullstack',
+        details: 'Frontend + Backend + projets complets',
+        duration: '4 mois',
+        priceFcfa: 200000,
+        icon: 'rocket',
+      },
+    ],
+  },
+  {
+    id: 'robotics',
+    title: 'Robotique',
+    ctaHref: '/contact',
+    ctaLabel: 'Demander une inscription',
+    intro:
+      'Assemblez, programmez et faites fonctionner un robot. Le kit (Arduino, capteurs et moteurs) est inclus. Formation en ligne ou en présentiel.',
+    courses: [
+      {
+        code: '13',
+        title: 'Robotique',
+        details: 'Arduino, capteurs, moteurs, programmation (kits inclus)',
+        duration: '1 mois',
+        priceFcfa: 75000,
+        icon: 'bot',
+      },
+    ],
+  },
+];
+
+export function formatFcfa(amount: number) {
+  return new Intl.NumberFormat('fr-FR').format(amount);
+}
+
 export const TECHNOLOGIES: { icon: IconName; title: string; description: string; items: string[] }[] = [
   {
     icon: 'palette',
@@ -109,7 +252,10 @@ export const TECHNOLOGIES: { icon: IconName; title: string; description: string;
   },
 ];
 
-/** Date de début de la cohorte — toutes les durées (2 sem., 3 mois, 4 mois) sont disponibles à chaque date. */
+/** La date de début n'est plus choisie à l'inscription : elle est envoyée par email. */
+export const START_DATE_NOTICE = 'La date de début vous sera communiquée par email.';
+
+/** Anciennes cohortes, conservées pour les dossiers déjà enregistrés. */
 export const FORMATION_SESSIONS = [
   {
     id: 'july_2026' as const,
@@ -189,8 +335,39 @@ export function usdToStripeCents(amountUsd: number) {
   return Math.round(amountUsd * 100);
 }
 
+const XOF_PER_USD = 600;
+
 export function usdToXof(amountUsd: number) {
-  return Math.round(amountUsd * 600);
+  return Math.round(amountUsd * XOF_PER_USD);
+}
+
+/** Inscription publique : mobile ou fullstack, 4 mois, tarif du catalogue en F CFA. */
+export function getPublicEnrollmentOffer(domain: 'mobile' | 'fullstack') {
+  const course = FORMATION_CATALOG.find((group) => group.id === 'web_mobile')?.courses.find((item) =>
+    domain === 'mobile' ? item.code === '08' : item.code === '09',
+  );
+  if (!course) {
+    throw new Error('Offre de formation introuvable');
+  }
+
+  const totalXof = course.priceFcfa;
+  const first = Math.round(totalXof * 0.4);
+  const second = Math.round(totalXof * 0.4);
+  const third = totalXof - first - second;
+  const shares = [first, second, third] as const;
+
+  return {
+    durationId: 'four_months' as const,
+    label: course.duration,
+    title: course.title,
+    totalXof,
+    totalUsd: totalXof / XOF_PER_USD,
+    installments: [
+      { number: 1 as const, label: '1re tranche', amountXof: shares[0], amountUsd: shares[0] / XOF_PER_USD },
+      { number: 2 as const, label: '2e tranche', amountXof: shares[1], amountUsd: shares[1] / XOF_PER_USD },
+      { number: 3 as const, label: '3e tranche', amountXof: shares[2], amountUsd: shares[2] / XOF_PER_USD },
+    ],
+  };
 }
 
 export function getDurationPricing(duration: Duration) {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useReducedMotion } from 'motion/react';
 import { BRAND_RGB } from '@/app/lib/brand-colors';
 
 type Variant = 'hero' | 'page';
@@ -60,12 +59,11 @@ function seedNodes(width: number, height: number, count: number): Node[] {
 
 export default function BinaryNeuralAnimation({ variant = 'hero' }: { variant?: Variant }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const reduceMotion = useReducedMotion();
   const config = VARIANT_CONFIG[variant];
   const isPage = variant === 'page';
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -144,7 +142,7 @@ export default function BinaryNeuralAnimation({ variant = 'hero' }: { variant?: 
 
         ctx.beginPath();
         ctx.arc(node.x, node.y, 3 + glow * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(138, 43, 226, ${(0.1 + glow * 0.18) * opacity})`;
+        ctx.fillStyle = `rgba(242, 183, 5, ${(0.1 + glow * 0.18) * opacity})`;
         ctx.fill();
 
         ctx.beginPath();
@@ -185,9 +183,9 @@ export default function BinaryNeuralAnimation({ variant = 'hero' }: { variant?: 
         Math.max(width, height) * 0.75,
       );
       const v = config.vignetteStrength;
-      vignette.addColorStop(0, 'rgba(10, 11, 30, 0)');
-      vignette.addColorStop(0.6, `rgba(10, 11, 30, ${0.18 * v})`);
-      vignette.addColorStop(1, `rgba(10, 11, 30, ${0.6 * v})`);
+      vignette.addColorStop(0, 'rgba(255, 255, 255, 0)');
+      vignette.addColorStop(0.55, `rgba(255, 255, 255, ${0.45 * v})`);
+      vignette.addColorStop(1, `rgba(255, 255, 255, ${0.92 * v})`);
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, width, height);
 
@@ -208,7 +206,7 @@ export default function BinaryNeuralAnimation({ variant = 'hero' }: { variant?: 
       observer?.disconnect();
       window.removeEventListener('resize', resize);
     };
-  }, [reduceMotion, variant]);
+  }, [config, isPage]);
 
   return (
     <div
@@ -220,9 +218,9 @@ export default function BinaryNeuralAnimation({ variant = 'hero' }: { variant?: 
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
       {isPage && (
         <>
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,_rgba(36,27,255,0.14)_0%,_transparent_55%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_100%,_rgba(139,92,246,0.1)_0%,_transparent_50%)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0b1e]/10 via-[#0a0b1e]/20 to-[#0a0b1e]/45" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,_rgba(27, 63, 166,0.14)_0%,_transparent_55%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_100%,_rgba(242,183,5,0.1)_0%,_transparent_50%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-white/25 to-white/70" />
         </>
       )}
     </div>

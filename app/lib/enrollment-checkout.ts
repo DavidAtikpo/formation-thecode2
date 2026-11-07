@@ -17,8 +17,6 @@ export type EnrollmentCheckoutBody = {
   paymentMethod: PaymentMethodId;
 };
 
-const VALID_DOMAINS = ['frontend', 'backend', 'mobile', 'fullstack', 'seo_social'] as const;
-const VALID_DURATIONS = ['two_weeks', 'three_months', 'four_months'] as const;
 const VALID_SESSIONS = ['july_2026', 'august_2026', 'late_august_2026'] as const;
 const VALID_PAYMENT_METHODS = ['stripe', 'fedapay', 'crypto'] as const;
 
@@ -63,14 +61,14 @@ export function parseEnrollmentCheckoutBody(
   if (!firstName || !lastName || !country || !phone || !address) {
     return { error: 'Informations personnelles incomplètes' };
   }
-  if (!VALID_DOMAINS.includes(domain)) {
-    return { error: 'Domaine invalide' };
+  if (domain !== 'mobile' && domain !== 'fullstack') {
+    return { error: 'Choisissez Développement mobile ou Fullstack' };
   }
   if (!VALID_SESSIONS.includes(formationSession)) {
     return { error: 'Session de formation invalide' };
   }
-  if (!VALID_DURATIONS.includes(duration)) {
-    return { error: 'Durée invalide' };
+  if (duration !== 'four_months') {
+    return { error: 'La formation dure 4 mois' };
   }
   if (scheduleDays.length !== 3) {
     return { error: 'Sélectionnez exactement 3 jours par semaine' };

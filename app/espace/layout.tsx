@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import EspaceShell from '@/app/components/espace/EspaceShell';
 
 export const metadata: Metadata = {
-  title: 'Mon espace — The Code²',
+  title: 'Mon espace — THE CODE CODE',
   description: 'Suivez votre formation, vos notes, vos paiements et votre certificat.',
 };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { MotionCard } from '@/app/components/Motion';
-import { formatUsd } from '@/app/lib/formation-config';
+import { formatFcfa, usdToXof } from '@/app/lib/formation-config';
 import type { Receipt } from '@/app/lib/espace-types';
 
 export function EspaceCard({
@@ -56,7 +56,7 @@ export function PaymentRow({
     >
       <div>
         <p className="text-sm font-medium text-white">{label}</p>
-        <p className="text-xs text-slate-400">{formatUsd(amount)} $</p>
+        <p className="text-xs text-slate-400">{formatFcfa(usdToXof(amount))} F CFA</p>
         {deadline && !paid && (
           <p className={`mt-0.5 text-[11px] ${overdue ? 'text-red-300' : 'text-slate-500'}`}>
             À régler avant le {deadline}

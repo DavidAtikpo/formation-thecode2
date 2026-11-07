@@ -22,7 +22,7 @@ export default function EcosystemContactForm({
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const inputClass =
-    'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-brand-400/50 sm:px-3.5 sm:py-2.5';
+    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400/50 sm:px-3.5 sm:py-2.5';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,14 +53,14 @@ export default function EcosystemContactForm({
   return (
     <form
       onSubmit={submit}
-      className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:space-y-4 sm:p-5"
+      className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:space-y-4 sm:p-5"
     >
       {feedback && (
         <div
           className={`rounded-lg border px-3 py-2 text-xs sm:text-sm ${
             feedback.type === 'ok'
               ? 'border-green-500/30 bg-green-500/10 text-green-300'
-              : 'border-red-500/30 bg-red-500/10 text-red-300'
+              : 'border-red-500/30 bg-red-500/10 text-red-700'
           }`}
         >
           {feedback.text}
@@ -113,7 +113,7 @@ export default function EcosystemContactForm({
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 sm:py-3"
+        className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 sm:py-3"
       >
         {busy ? 'Envoi…' : submitLabel}
       </button>
@@ -135,7 +135,7 @@ export default function EcosystemContactForm({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-300 sm:text-sm">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-slate-600 sm:text-sm">{label}</label>
       {children}
     </div>
   );

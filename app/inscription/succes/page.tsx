@@ -101,7 +101,7 @@ function SuccessContent() {
       <div className="text-center">
         <div className="mb-4 text-5xl">⏳</div>
         <h1 className="text-2xl font-bold">Paiement en cours de traitement</h1>
-        <p className="mt-2 text-slate-400">Votre inscription sera confirmée sous peu.</p>
+        <p className="mt-2 text-slate-600">Votre inscription sera confirmée sous peu.</p>
       </div>
     );
   }
@@ -110,7 +110,7 @@ function SuccessContent() {
     return (
       <div className="text-center">
         <h1 className="text-2xl font-bold">Inscription</h1>
-        <p className="mt-2 text-slate-400">
+        <p className="mt-2 text-slate-600">
           <Link href="/inscription" className="text-brand-400 hover:underline">
             Retour au formulaire
           </Link>
@@ -129,17 +129,17 @@ function SuccessContent() {
       />
       <MotionCard className="text-center">
         <div className="mb-4 text-6xl">🎉</div>
-        <h1 className="text-3xl font-bold text-brand-300">Frais d&apos;inscription payés !</h1>
-        <p className="mt-4 text-slate-300">
+        <h1 className="text-3xl font-bold text-brand-600">Frais d&apos;inscription payés !</h1>
+        <p className="mt-4 text-slate-600">
           Votre place est réservée. Accédez à votre espace candidat pour suivre votre parcours,
           consulter vos notes et régler les frais de formation.
         </p>
         <p className="mt-3 text-xs text-slate-500 sm:text-sm">
-          Les frais de formation se règlent dans votre espace candidat. Le délai dépend de la durée
-          choisie (7 jours pour 2 semaines, 2 mois pour 3 mois, 3 mois pour 4 mois).
+          Les frais de formation (200 000 F CFA, en 3 tranches) se règlent dans votre espace
+          candidat. La date de début vous sera communiquée par email.
         </p>
         {showSkillModal ? (
-          <p className="mt-2 text-xs text-brand-300">
+          <p className="mt-2 text-xs text-brand-600">
             Complétez votre profil technique pour personnaliser votre accompagnement.
           </p>
         ) : (
@@ -149,7 +149,7 @@ function SuccessContent() {
         )}
         <Link
           href="/espace/parcours"
-          className="mt-8 inline-block rounded-xl bg-gradient-to-r from-brand-500 to-violet-600 px-8 py-3 font-semibold text-white hover:opacity-90"
+          className="mt-8 inline-block rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 font-semibold text-white hover:opacity-90"
         >
           Accéder à mon espace
         </Link>

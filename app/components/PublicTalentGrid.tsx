@@ -55,10 +55,10 @@ export default function PublicTalentGrid({ className = '' }: Props) {
       {loading ? (
         <p className="text-xs text-slate-500 sm:text-sm">Chargement des profils…</p>
       ) : profiles.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/15 p-6 text-center">
-          <p className="text-sm text-slate-400">Aucun profil publié pour le moment.</p>
+        <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center">
+          <p className="text-sm text-slate-600">Aucun profil publié pour le moment.</p>
           <p className="mt-1 text-xs text-slate-500">
-            Les profils validés par The Code² apparaîtront ici.
+            Les profils validés par THE CODE CODE apparaîtront ici.
           </p>
         </div>
       ) : (
@@ -70,7 +70,7 @@ export default function PublicTalentGrid({ className = '' }: Props) {
             >
               <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-white sm:text-base">
+                  <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
                     {profile.displayName}
                   </h3>
                   <p className="text-[11px] text-green-300 sm:text-xs">{profile.categoryLabel}</p>
@@ -80,12 +80,12 @@ export default function PublicTalentGrid({ className = '' }: Props) {
                 )}
               </div>
               {profile.headline && (
-                <p className="mb-2 text-xs font-medium text-slate-300 sm:text-sm">
+                <p className="mb-2 text-xs font-medium text-slate-600 sm:text-sm">
                   {profile.headline}
                 </p>
               )}
               {profile.bio && (
-                <p className="mb-3 line-clamp-3 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                <p className="mb-3 line-clamp-3 text-xs leading-relaxed text-slate-600 sm:text-sm">
                   {profile.bio}
                 </p>
               )}
@@ -93,7 +93,7 @@ export default function PublicTalentGrid({ className = '' }: Props) {
                 {profile.skills.slice(0, 8).map((skill) => (
                   <span
                     key={skill}
-                    className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[11px] text-slate-300"
+                    className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600"
                   >
                     {skill}
                   </span>
@@ -149,7 +149,7 @@ function FilterChip({
       className={`rounded-full border px-2.5 py-1 text-[11px] transition sm:px-3 sm:text-xs ${
         active
           ? 'border-brand-400/40 bg-brand-400/10 text-brand-300'
-          : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+          : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-brand-600'
       }`}
     >
       {children}

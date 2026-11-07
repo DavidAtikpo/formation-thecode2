@@ -1,9 +1,12 @@
 import {
   Award,
+  Bot,
   Calendar,
+  Clapperboard,
   Clock,
   CreditCard,
   Cog,
+  FileSpreadsheet,
   Globe,
   GraduationCap,
   Laptop,
@@ -11,9 +14,12 @@ import {
   MessageCircle,
   Monitor,
   Palette,
+  PenTool,
   RefreshCw,
   Rocket,
+  Shirt,
   Smartphone,
+  Sparkles,
   TrendingUp,
   Users,
   Wifi,
@@ -42,6 +48,12 @@ const ICONS = {
   credit: CreditCard,
   graduation: GraduationCap,
   message: MessageCircle,
+  bot: Bot,
+  video: Clapperboard,
+  shirt: Shirt,
+  sparkles: Sparkles,
+  sheet: FileSpreadsheet,
+  pen: PenTool,
 } as const satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

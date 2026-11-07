@@ -7,5 +7,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/connexion?redirect=/admin');
   }
 
-  return <>{children}</>;
+  return <div className="min-h-[calc(100dvh-4.5rem)] bg-[#081433] text-white">{children}</div>;
 }

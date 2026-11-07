@@ -12,13 +12,13 @@ import {
 import { getAppBaseUrl } from '@/app/lib/email-verification';
 
 const COMPANY = {
-  name: 'The Code²',
+  name: 'THE CODE CODE',
   tagline: 'Formation pratique en technologies numériques',
   address: 'Aného — Togo',
-  email: 'thecode2@qrthecode2.com',
-  brand: '#241bff',
-  brandDark: '#1d15cc',
-  brandLight: '#7d75ff',
+  email: 'thecodecode2@gmail.com',
+  brand: '#1b3fa6',
+  brandDark: '#142f7c',
+  brandLight: '#9bb4ee',
 } as const;
 
 let cachedLogoDataUri: string | null = null;
@@ -165,7 +165,7 @@ export function buildCertificateHtml(params: {
       justify-content: center;
       font-size: 56px;
       font-weight: 900;
-      color: rgba(36, 27, 255, 0.08);
+      color: rgba(27, 63, 166, 0.08);
       letter-spacing: 0.06em;
       pointer-events: none;
       z-index: 2;
@@ -175,7 +175,7 @@ export function buildCertificateHtml(params: {
       background: #fff;
       border: 3px solid ${COMPANY.brand};
       border-radius: 4px;
-      box-shadow: 0 12px 40px rgba(36, 27, 255, 0.1);
+      box-shadow: 0 12px 40px rgba(27, 63, 166, 0.1);
       overflow: hidden;
       position: relative;
     }
@@ -395,8 +395,8 @@ export function buildCertificateHtml(params: {
               <dd>${escapeHtml(params.domain)}</dd>
               <dt>Durée</dt>
               <dd>${escapeHtml(params.duration)}</dd>
-              <dt>Session</dt>
-              <dd>${escapeHtml(params.session)} — ${escapeHtml(params.sessionPeriod)}</dd>
+              <dt>Date de début</dt>
+              <dd>Communiquée par email</dd>
             </dl>
             ${
               gradesRows

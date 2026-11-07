@@ -130,7 +130,7 @@ export default function ProjetPage() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          className="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
         >
           {busy ? 'Enregistrement…' : data.project.url ? 'Mettre à jour le lien' : 'Soumettre mon projet'}
         </button>

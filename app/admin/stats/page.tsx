@@ -167,7 +167,7 @@ export default function AdminStatsPage() {
                       <Bar
                         value={item.count}
                         max={stats.pageVisits.maxPathCount}
-                        color="bg-violet-500"
+                        color="bg-gold-400"
                       />
                     </div>
                   ))}
@@ -236,7 +236,7 @@ export default function AdminStatsPage() {
                   <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
                     <span className="text-[10px] font-medium text-slate-400">{day.count || ''}</span>
                     <div
-                      className="w-full rounded-t bg-violet-500/80 transition-all"
+                      className="w-full rounded-t bg-gold-400/80 transition-all"
                       style={{
                         height: `${Math.max(4, (day.count / maxVisitDayCount) * 80)}px`,
                         opacity: day.count > 0 ? 1 : 0.2,
@@ -368,11 +368,12 @@ export default function AdminStatsPage() {
   );
 }
 
-function AdminNav({ active }: { active: 'inscriptions' | 'stats' | 'notifications' | 'cours' }) {
+function AdminNav({ active }: { active: 'inscriptions' | 'stats' | 'notifications' | 'cours' | 'realisations' }) {
   const links = [
     { id: 'inscriptions' as const, href: '/admin', label: 'Inscriptions' },
     { id: 'stats' as const, href: '/admin/stats', label: 'Statistiques' },
     { id: 'notifications' as const, href: '/admin/notifications', label: 'Notifications' },
+    { id: 'realisations' as const, href: '/admin/realisations', label: 'Réalisations' },
     { id: 'cours' as const, href: '/admin/cours', label: 'Cours' },
   ];
 

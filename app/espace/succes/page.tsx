@@ -90,7 +90,7 @@ function SuccessContent() {
       </p>
       <Link
         href="/espace/parcours"
-        className="mt-8 inline-block rounded-xl bg-gradient-to-r from-brand-500 to-violet-600 px-8 py-3 font-semibold text-white hover:opacity-90"
+        className="mt-8 inline-block rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 font-semibold text-white hover:opacity-90"
       >
         Retour à mon espace
       </Link>

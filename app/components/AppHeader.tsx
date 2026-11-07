@@ -63,20 +63,30 @@ export default function AppHeader() {
       : '/compte';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0b1e]/90 backdrop-blur-md">
+    <header
+      className={`sticky top-0 z-50 backdrop-blur-md ${
+        isEspace
+          ? 'border-b border-white/10 bg-[#081433]/95'
+          : 'border-b-2 border-gold-400 bg-white/95'
+      }`}
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:px-6 sm:py-3">
-        <Link href={homeHref} className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+        <Link href={homeHref} className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <Image
             src="/logo.png"
-            alt="The Code²"
+            alt="THE CODE CODE"
             width={32}
             height={32}
             className="h-8 w-8 shrink-0 rounded-full object-cover sm:h-9 sm:w-9"
             priority
           />
           <div className="min-w-0">
-            <p className="truncate text-xs font-bold tracking-wide text-white sm:text-sm">The Code²</p>
-            <p className="hidden text-[11px] text-brand-300 sm:block sm:text-xs">{subtitle}</p>
+            <p className={`whitespace-nowrap text-[11px] font-bold tracking-tight sm:text-sm ${isEspace ? 'text-white' : 'text-slate-900'}`}>
+              THE CODE CODE
+            </p>
+            <p className={`hidden text-[11px] sm:block sm:text-xs ${isEspace ? 'text-brand-300' : 'text-brand-600'}`}>
+              {subtitle}
+            </p>
           </div>
         </Link>
 
@@ -92,20 +102,20 @@ export default function AppHeader() {
               <>
                 <Link
                   href="/"
-                  className="hidden px-1 text-[11px] text-slate-400 hover:text-white sm:inline sm:text-sm"
+                  className="hidden px-1 text-[11px] text-slate-600 hover:text-brand-600 sm:inline sm:text-sm"
                 >
                   Site public
                 </Link>
                 <Link
                   href="/espace/parcours"
-                  className="px-1 text-[11px] text-slate-300 hover:text-white sm:text-sm"
+                  className="px-1 text-[11px] text-slate-600 hover:text-brand-600 sm:text-sm"
                 >
                   Mon espace
                 </Link>
                 {user.isAdmin && (
                   <Link
                     href="/admin"
-                    className="hidden px-1 text-xs text-slate-300 hover:text-white sm:inline sm:text-sm"
+                    className="hidden px-1 text-xs text-slate-600 hover:text-brand-600 sm:inline sm:text-sm"
                   >
                     Admin
                   </Link>
@@ -113,7 +123,7 @@ export default function AppHeader() {
                 <button
                   type="button"
                   onClick={logout}
-                  className="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-slate-300 transition hover:bg-white/5 sm:px-3 sm:text-sm"
+                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100 sm:px-3 sm:text-sm"
                 >
                   Déconnexion
                 </button>
@@ -121,13 +131,13 @@ export default function AppHeader() {
             )
           ) : (
             <>
-              <Link href="/connexion" className="px-1 text-[11px] text-slate-300 hover:text-white sm:text-sm">
+              <Link href="/connexion" className="px-1 text-[11px] text-slate-600 hover:text-brand-600 sm:text-sm">
                 Connexion
               </Link>
               {!pathname.startsWith('/compte') && (
                 <Link
                   href="/compte"
-                  className="rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-90 sm:px-3 sm:text-sm"
+                  className="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-90 sm:px-3 sm:text-sm"
                 >
                   Créer un compte
                 </Link>

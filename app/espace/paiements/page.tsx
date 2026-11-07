@@ -7,7 +7,11 @@ import SectionIcon from '@/app/components/SectionIcon';
 import { useEspace } from '@/app/components/espace/EspaceProvider';
 import { EspaceCard, PaymentRow } from '@/app/components/espace/EspaceUi';
 import type { PaymentMethodId } from '@/app/lib/enrollment-checkout';
-import { formatUsd } from '@/app/lib/formation-config';
+import { formatFcfa, usdToXof } from '@/app/lib/formation-config';
+
+function formatFee(amountUsd: number) {
+  return `${formatFcfa(usdToXof(amountUsd))} F CFA`;
+}
 
 function PaiementsContent() {
   const searchParams = useSearchParams();
@@ -16,12 +20,6 @@ function PaiementsContent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>('fedapay');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const deadlineDate = new Date(data.formationDeadline).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
 
   const payNextInstallment = async () => {
     setBusy(true);
@@ -101,12 +99,12 @@ function PaiementsContent() {
 
           <div className="mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-200 sm:text-sm">
             Inscription gratuite — votre place est confirmée. Le tarif de la formation (
-            <strong>{formatUsd(data.totalFeeUsd)} $</strong>) se règle en 3 tranches.
+            <strong>{formatFee(data.totalFeeUsd)}</strong>) se règle en 3 tranches.
           </div>
 
           <div className="mb-3 flex justify-between border-b border-white/10 pb-2 text-sm">
             <span className="text-slate-400">Prix total de la formation</span>
-            <span className="font-semibold text-brand-300">{formatUsd(data.totalFeeUsd)} $</span>
+            <span className="font-semibold text-brand-300">{formatFee(data.totalFeeUsd)}</span>
           </div>
 
           <div className="space-y-3">
@@ -127,15 +125,9 @@ function PaiementsContent() {
             <div className="mt-4 border-t border-white/10 pt-4">
               <p className="mb-2 text-xs text-slate-400 sm:text-sm">
                 Prochaine échéance : <strong className="text-slate-200">{nextInstallment.label}</strong>{' '}
-                ({formatUsd(nextInstallment.amountUsd)} $). L&apos;ensemble des tranches doit être réglé
-                au plus tard le <strong className="text-slate-200">{deadlineDate}</strong> (
-                {data.formationDeadlineLabel} après le début de votre session).
+                ({formatFee(nextInstallment.amountUsd)}). La date de début vous sera communiquée par
+                email.
               </p>
-              {data.formationOverdue && (
-                <p className="mb-3 text-xs font-medium text-red-300 sm:text-sm">
-                  Délai dépassé — merci de régler dès que possible.
-                </p>
-              )}
               {error && (
                 <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                   {error}
@@ -146,11 +138,11 @@ function PaiementsContent() {
                 type="button"
                 onClick={payNextInstallment}
                 disabled={busy}
-                className="mt-3 w-full rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                className="mt-3 w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
               >
                 {busy
                   ? 'Redirection…'
-                  : `Payer la ${nextInstallment.label.toLowerCase()} — ${formatUsd(nextInstallment.amountUsd)} $`}
+                  : `Payer la ${nextInstallment.label.toLowerCase()} — ${formatFee(nextInstallment.amountUsd)}`}
               </button>
             </div>
           )}
@@ -232,8 +224,6 @@ function PaiementsContent() {
             amount={data.formationFeeUsd}
             paid={data.formationPaid}
             paidAt={data.formationPaidAt}
-            deadline={!data.formationPaid ? deadlineDate : undefined}
-            overdue={data.formationOverdue}
             receipt={formationReceipt}
           />
         </div>
@@ -242,7 +232,7 @@ function PaiementsContent() {
           <div className="mt-4 border-t border-white/10 pt-4">
             <p className="mb-2 text-xs text-slate-400 sm:text-sm">
               Finalisez votre inscription en réglant les frais d&apos;inscription (
-              <strong className="text-slate-200">{formatUsd(data.registrationFeeUsd)} $</strong>
+              <strong className="text-slate-200">{formatFee(data.registrationFeeUsd)}</strong>
               ).
             </p>
             {error && (
@@ -255,11 +245,11 @@ function PaiementsContent() {
               type="button"
               onClick={payRegistration}
               disabled={busy}
-              className="mt-3 w-full rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              className="mt-3 w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
               {busy
                 ? 'Redirection…'
-                : `Payer les frais d'inscription — ${formatUsd(data.registrationFeeUsd)} $`}
+                : `Payer les frais d'inscription — ${formatFee(data.registrationFeeUsd)}`}
             </button>
           </div>
         )}
@@ -267,15 +257,9 @@ function PaiementsContent() {
         {!data.formationPaid && data.registrationPaid && data.formationFeeUsd > 0 && (
           <div className="mt-4 border-t border-white/10 pt-4">
             <p className="mb-2 text-xs text-slate-400 sm:text-sm">
-              Les frais de formation doivent être réglés au plus tard le{' '}
-              <strong className="text-slate-200">{deadlineDate}</strong> (
-              {data.formationDeadlineLabel} après le début de votre session).
+              La date de début vous sera communiquée par email. Les frais de formation se règlent
+              depuis cet espace.
             </p>
-            {data.formationOverdue && (
-              <p className="mb-3 text-xs font-medium text-red-300 sm:text-sm">
-                Délai dépassé — merci de régler dès que possible.
-              </p>
-            )}
             {error && (
               <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                 {error}
@@ -286,11 +270,11 @@ function PaiementsContent() {
               type="button"
               onClick={payFormation}
               disabled={busy}
-              className="mt-3 w-full rounded-lg bg-gradient-to-r from-brand-500 to-violet-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              className="mt-3 w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
               {busy
                 ? 'Redirection…'
-                : `Payer les frais de formation — ${formatUsd(data.formationFeeUsd)} $`}
+                : `Payer les frais de formation — ${formatFee(data.formationFeeUsd)}`}
             </button>
           </div>
         )}

@@ -210,6 +210,12 @@ export default function AdminCoursPage() {
             Notifications
           </Link>
           <Link
+            href="/admin/realisations"
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300 hover:bg-white/5 sm:text-sm"
+          >
+            Réalisations
+          </Link>
+          <Link
             href="/"
             className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300 hover:bg-white/5 sm:text-sm"
           >

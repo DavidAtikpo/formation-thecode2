@@ -54,8 +54,8 @@ export default function PublicJobList({ className = '' }: Props) {
       {loading ? (
         <p className="text-xs text-slate-500 sm:text-sm">Chargement des offres…</p>
       ) : listings.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/15 p-6 text-center">
-          <p className="text-sm text-slate-400">Aucune offre publiée pour le moment.</p>
+        <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center">
+          <p className="text-sm text-slate-600">Aucune offre publiée pour le moment.</p>
           <p className="mt-1 text-xs text-slate-500">
             Publiez votre besoin via le formulaire ci-dessous — les offres validées apparaîtront ici.
           </p>
@@ -69,10 +69,10 @@ export default function PublicJobList({ className = '' }: Props) {
             >
               <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-white sm:text-base">{listing.title}</h3>
-                  <p className="text-xs text-brand-300 sm:text-sm">{listing.company}</p>
+                  <h3 className="text-sm font-semibold text-slate-900 sm:text-base">{listing.title}</h3>
+                  <p className="text-xs text-brand-600 sm:text-sm">{listing.company}</p>
                 </div>
-                <span className="rounded-full border border-brand-400/30 bg-brand-400/10 px-2.5 py-0.5 text-[11px] text-brand-200 sm:text-xs">
+                <span className="rounded-full border border-brand-400/30 bg-brand-400/10 px-2.5 py-0.5 text-[11px] text-brand-700 sm:text-xs">
                   {listing.contractTypeLabel}
                 </span>
               </div>
@@ -83,7 +83,7 @@ export default function PublicJobList({ className = '' }: Props) {
                   <span className="text-green-300">· Remote possible</span>
                 )}
               </div>
-              <p className="whitespace-pre-line text-xs leading-relaxed text-slate-400 sm:text-sm">
+              <p className="whitespace-pre-line text-xs leading-relaxed text-slate-600 sm:text-sm">
                 {listing.description}
               </p>
             </MotionItem>
@@ -110,7 +110,7 @@ function FilterChip({
       className={`rounded-full border px-2.5 py-1 text-[11px] transition sm:px-3 sm:text-xs ${
         active
           ? 'border-brand-400/40 bg-brand-400/10 text-brand-300'
-          : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+          : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-brand-600'
       }`}
     >
       {children}

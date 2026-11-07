@@ -86,25 +86,25 @@ function VerifyEmailContent() {
   }
 
   return (
-    <MotionCard className="w-full max-w-md rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm sm:rounded-2xl sm:p-6">
+    <MotionCard className="w-full max-w-md rounded-xl border border-slate-200 bg-slate-50 p-5 backdrop-blur-sm sm:rounded-2xl sm:p-6">
       <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-brand-400 sm:text-xs">
         Étape 2
       </p>
       <h1 className="mb-1 text-xl font-bold sm:text-2xl">Vérifiez votre email</h1>
-      <p className="mb-4 text-xs text-slate-400 sm:mb-5 sm:text-sm">
+      <p className="mb-4 text-xs text-slate-600 sm:mb-5 sm:text-sm">
         Nous avons envoyé un lien de confirmation à{' '}
-        <span className="font-medium text-white">{email}</span>. Cliquez sur le lien pour
+        <span className="font-medium text-slate-900">{email}</span>. Cliquez sur le lien pour
         poursuivre votre inscription.
       </p>
 
       {error && (
-        <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300 sm:text-sm">
+        <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 sm:text-sm">
           {error}
         </div>
       )}
 
       {message && (
-        <div className="mb-3 rounded-lg border border-brand-400/30 bg-brand-400/10 px-3 py-2 text-xs text-brand-200 sm:text-sm">
+        <div className="mb-3 rounded-lg border border-brand-400/30 bg-brand-400/10 px-3 py-2 text-xs text-brand-700 sm:text-sm">
           {message}
         </div>
       )}
@@ -114,7 +114,7 @@ function VerifyEmailContent() {
           type="button"
           onClick={resend}
           disabled={busy || cooldown > 0}
-          className="w-full rounded-lg border border-white/15 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5 disabled:opacity-50 sm:rounded-xl sm:py-3"
+          className="w-full rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50 sm:rounded-xl sm:py-3"
         >
           {busy
             ? 'Envoi…'
@@ -127,7 +127,7 @@ function VerifyEmailContent() {
         </p>
       </div>
 
-      <p className="mt-4 text-center text-xs text-slate-400 sm:mt-5 sm:text-sm">
+      <p className="mt-4 text-center text-xs text-slate-600 sm:mt-5 sm:text-sm">
         Mauvaise adresse ?{' '}
         <Link href="/compte" className="text-brand-400 hover:underline">
           Créer un autre compte

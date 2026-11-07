@@ -50,17 +50,17 @@ function InscriptionContent() {
     <div className="px-3 py-8 sm:px-4 sm:py-10">
       <MotionSection className="mx-auto mb-5 max-w-2xl text-center sm:mb-6">
         <h1 className="text-xl font-bold sm:text-2xl">Inscription à la formation</h1>
-        <p className="mt-1.5 text-xs text-slate-400 sm:text-sm">
+        <p className="mt-1.5 text-xs text-slate-600 sm:text-sm">
           Complétez le formulaire pour finaliser votre inscription. Le paiement se fera ensuite
           dans votre espace candidat.
         </p>
         {verified && (
-          <div className="mt-3 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-300 sm:text-sm">
+          <div className="mt-3 rounded-lg border border-green-600/30 bg-green-50 px-3 py-2 text-xs text-green-800 sm:text-sm">
             Email vérifié avec succès. Vous pouvez compléter votre inscription.
           </div>
         )}
         {cancelled && (
-          <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300 sm:text-sm">
+          <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:text-sm">
             Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.
           </div>
         )}

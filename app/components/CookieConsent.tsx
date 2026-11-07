@@ -48,17 +48,17 @@ export default function CookieConsent() {
       role="dialog"
       aria-labelledby="cookie-consent-title"
       aria-describedby="cookie-consent-desc"
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-white/10 bg-[#0d0e22]/95 p-4 shadow-2xl backdrop-blur-md sm:p-5"
+      className="fixed inset-x-0 bottom-0 z-[60] border-t border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur-md sm:p-5"
     >
       <div className="mx-auto flex max-w-4xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">
           <p
             id="cookie-consent-title"
-            className="text-sm font-semibold text-white sm:text-base"
+            className="text-sm font-semibold text-slate-900 sm:text-base"
           >
             Cookies et confidentialité
           </p>
-          <p id="cookie-consent-desc" className="mt-1.5 text-xs leading-relaxed text-slate-400 sm:text-sm">
+          <p id="cookie-consent-desc" className="mt-1.5 text-xs leading-relaxed text-slate-600 sm:text-sm">
             Nous utilisons un cookie de session pour votre connexion (nécessaire) et, avec
             votre accord, des statistiques anonymes de visite pour améliorer le site (pages
             consultées, pays/ville approximatifs). Aucun cookie publicitaire.
@@ -74,7 +74,7 @@ export default function CookieConsent() {
           <button
             type="button"
             onClick={() => choose('rejected')}
-            className="rounded-lg border border-white/15 px-4 py-2.5 text-xs font-medium text-slate-300 hover:bg-white/5 sm:text-sm"
+            className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-100 sm:text-sm"
           >
             Refuser
           </button>

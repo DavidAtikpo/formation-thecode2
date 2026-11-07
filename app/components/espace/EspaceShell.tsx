@@ -44,7 +44,9 @@ export default function EspaceShell({ children }: { children: React.ReactNode })
   return (
     <EspaceProvider>
       <EspaceBodyClass />
-      <EspaceFrame>{children}</EspaceFrame>
+      <div className="min-h-[calc(100dvh-4.5rem)] bg-[#081433] text-white">
+        <EspaceFrame>{children}</EspaceFrame>
+      </div>
     </EspaceProvider>
   );
 }

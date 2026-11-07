@@ -222,6 +222,9 @@ export default function AdminEcosystemPage() {
           <Link href="/admin" className="text-slate-400 hover:text-white">
             Inscriptions
           </Link>
+          <Link href="/admin/realisations" className="text-slate-400 hover:text-white">
+            Réalisations
+          </Link>
           <Link href="/admin/cours" className="text-slate-400 hover:text-white">
             Cours
           </Link>
@@ -269,7 +272,7 @@ export default function AdminEcosystemPage() {
               <select className={inputClass} value={profileForm.category}
                 onChange={(e) => setProfileForm({ ...profileForm, category: e.target.value })}>
                 {TALENT_CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-[#0a0b1e]">{c.label}</option>
+                  <option key={c.id} value={c.id} className="bg-[#081433]">{c.label}</option>
                 ))}
               </select>
             </Field>
@@ -343,7 +346,7 @@ export default function AdminEcosystemPage() {
                 <select className={inputClass} value={jobForm.category}
                   onChange={(e) => setJobForm({ ...jobForm, category: e.target.value })}>
                   {TALENT_CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#0a0b1e]">{c.label}</option>
+                    <option key={c.id} value={c.id} className="bg-[#081433]">{c.label}</option>
                   ))}
                 </select>
               </Field>
@@ -351,7 +354,7 @@ export default function AdminEcosystemPage() {
                 <select className={inputClass} value={jobForm.contractType}
                   onChange={(e) => setJobForm({ ...jobForm, contractType: e.target.value })}>
                   {JOB_CONTRACT_TYPES.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#0a0b1e]">{c.label}</option>
+                    <option key={c.id} value={c.id} className="bg-[#081433]">{c.label}</option>
                   ))}
                 </select>
               </Field>

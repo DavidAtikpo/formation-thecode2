@@ -8,12 +8,10 @@ import { getAppBaseUrl } from '@/app/lib/email-verification';
 import {
   getDomain,
   getDuration,
-  getFormationSession,
   HOUR_SLOTS,
   WEEK_DAYS,
   type DomainId,
   type DurationId,
-  type SessionId,
 } from '@/app/lib/formation-config';
 import {
   getInstallmentPaymentFields,
@@ -69,7 +67,7 @@ export async function notifyAdminsOfPayment(enrollmentId: string, phase: Payment
     lastName: enrollment.lastName,
     email: enrollment.user.email,
     domain: getDomain(enrollment.domain as DomainId).label,
-    session: getFormationSession(enrollment.formationSession as SessionId).period,
+    session: 'Communiquée par email',
     duration: getDuration(enrollment.duration as DurationId).label,
     paymentMethod: method ? (PAYMENT_METHOD_LABELS[method] ?? method) : '—',
     adminUrl,
@@ -100,7 +98,7 @@ export async function notifyEnrollmentCreated(enrollmentId: string) {
   const paiementsUrl = `${baseUrl}/espace/paiements`;
 
   const domain = getDomain(enrollment.domain as DomainId).label;
-  const session = getFormationSession(enrollment.formationSession as SessionId).period;
+  const session = 'Communiquée par email';
   const duration = getDuration(enrollment.duration as DurationId).label;
   const schedule = formatEnrollmentSchedule(enrollment.scheduleDays, enrollment.scheduleHours);
 

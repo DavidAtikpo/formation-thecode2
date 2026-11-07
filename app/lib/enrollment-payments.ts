@@ -124,7 +124,7 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
             currency: 'usd',
             unit_amount: params.stripeCents,
             product_data: {
-              name: `The Code² — ${label}`,
+              name: `THE CODE CODE — ${label}`,
               description: `${params.firstName} ${params.lastName} — ${params.domain}`,
             },
           },
@@ -158,7 +158,7 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
     if (!isFedapayConfigured()) throw new Error('FedaPay non configuré');
 
     const fedapay = await createFedapayPayment({
-      description: `The Code² — ${label} — ${params.firstName} ${params.lastName}`,
+      description: `THE CODE CODE — ${label} — ${params.firstName} ${params.lastName}`,
       amountXof,
       callbackUrl: buildSuccessUrl(base, params.phase, 'fedapay'),
       firstName: params.firstName,
@@ -181,7 +181,7 @@ export async function createEnrollmentPayment(params: CreatePaymentParams) {
   const crypto = await createCryptoInvoice({
     priceAmount: params.amountUsd,
     orderId,
-    orderDescription: `The Code² — ${label} — ${params.firstName} ${params.lastName}`,
+    orderDescription: `THE CODE CODE — ${label} — ${params.firstName} ${params.lastName}`,
     ipnCallbackUrl: `${base}/api/webhooks/crypto`,
     successUrl: buildSuccessUrl(base, params.phase, 'crypto').replace(
       '{ENROLLMENT_ID}',

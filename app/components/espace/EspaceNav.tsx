@@ -123,7 +123,7 @@ export default function EspaceNav({ badges }: { badges?: Badges }) {
         </ul>
       </nav>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0a0b1e]/95 backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#081433]/95 backdrop-blur-md md:hidden">
         <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
           {ESPACE_BOTTOM_NAV.map((item) => (
             <NavLink
